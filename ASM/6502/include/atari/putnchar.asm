@@ -13,7 +13,5 @@
 	sta ICBAH	; output buffer high
 	stx ICBLH	; output size high
 	
-	;jsr CIOV
-	;rts
 	jmp CIOV
 .endp

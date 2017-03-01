@@ -2,7 +2,8 @@
 
 .proc fasc2str
 	ldy #$FF
-fstr1	iny	
+fstr1	
+	iny	
 	lda (INBUFF),Y
 	bpl fstr1
 	and #$7F
