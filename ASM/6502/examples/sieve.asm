@@ -9,7 +9,7 @@
 	ICL "../include/atari/printfr0.asm"
 	ICL "../include/atari/fasc2str.asm"
 	ICL "../include/atari/putnchar.asm"
-	ICL "../include/atari/putline.asm"
+	ICL "../include/atari/putstring.asm"
 	ICL "../include/atari/putc.asm"
 ;	ICL "asmlib/u16_div10.asm"
 
@@ -132,7 +132,7 @@ while1out
 	sta PTR1
 	lda #STR3/256
 	sta PTR1+1
-	jsr putline
+	jsr putstring
 	lda u16_tm1
 	ldx u16_tm1+1
 	jsr printu16		; print tm memset
@@ -140,7 +140,7 @@ while1out
 	sta PTR1
 	lda #STR2/256
 	sta PTR1+1
-	jsr putline
+	jsr putstring
 				
 	lda u16_count
 	ldx u16_count+1
@@ -149,7 +149,7 @@ while1out
 	sta PTR1
 	lda #STR1/256
 	sta PTR1+1
-	jsr putline
+	jsr putstring
 	lda u16_tm2
 	ldx u16_tm2+1
 	jsr printu16		; print tm prime calc
@@ -157,7 +157,7 @@ while1out
 	sta PTR1
 	lda #STR2/256
 	sta PTR1+1
-	jsr putline
+	jsr putstring
 	
 le	jmp le	
 	rts

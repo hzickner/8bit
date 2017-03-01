@@ -1,6 +1,6 @@
-; write CR terminated line to console
+; write CR terminated string to console
 ; PTR1 - pointer to output string
-.proc putline
+.proc putstring
 	ldx #0
 
 	lda #9
@@ -14,7 +14,5 @@
 	lda #$FF
 	sta ICBLL	; output size low
 
-	;jsr CIOV
-	;rts
 	jmp CIOV
 .endp	
