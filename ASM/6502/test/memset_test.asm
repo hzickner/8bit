@@ -2,9 +2,9 @@
 
 PTR1	= $80
 PTR2	= $82
-B3		= $82
-B5		= $84
-B6		= $85
+B3	= $82
+B5	= $84
+B6	= $85
 
 ; A - value
 ; X - size H
@@ -16,25 +16,25 @@ B6		= $85
 	sty B3		; 3  2 ; temp storage for low byte of size
 	
 	cpx #0		; 2  2
-	beq l1		; 2+ 2 ; less than one page
+	beq remain	; 2+ 2 ; less than one page
 
 	ldy #0		; 2  2								; 9
-l2	sta (PTR1),Y; 6  2							
-	dey			; 2  1
-	bne l2		; 2+ 2 ; fill one page				; inner loop 11*256*X = 2816*X
+loop1	sta (PTR1),Y	; 6  2							
+	dey		; 2  1
+	bne loop1	; 2+ 2 ; fill one page			; inner loop 11*256*X = 2816*X
 
-	inc PTR1+1  ; 5  2
-	dex			; 2  1
-	bne l2		; 2+ 2 ; advance to next page		; outer loop 10*X
+	inc PTR1+1  	; 5  2
+	dex		; 2  1
+	bne loop1	; 2+ 2 ; advance to next page		; outer loop 10*X
 		
-l1	ldy B3		; 3  2
-	beq l3		; 2+ 2								; 6
-l4	dey			; 2  1
-	sta (PTR1),Y; 6  2
-	bne l4		; 2+ 2 ; remaining bytes			; loop 11*Y
-l3	
-	rts			; 6	 1								; 6
-.endp												; total 11*N + X*10 (per page overhead) + 21 (const overhead); 28 bytes
+remain	ldy B3		; 3  2
+	beq out		; 2+ 2					; 6
+loop2	dey		; 2  1
+	sta (PTR1),Y	; 6  2
+	bne loop2	; 2+ 2 ; remaining bytes		; loop 11*Y
+out	
+	rts		; 6  1					; 6
+.endp								; total 11*N + X*10 (per page overhead) + 21 (const overhead); 28 bytes
 
 ; A - value
 ; X - size H
@@ -46,27 +46,27 @@ l3
 	sty B3		; 3  2 ; temp storage for low byte of size
 	
 	cpx #0		; 2  2
-	beq l1		; 2+ 2 ; less than one page
+	beq remain	; 2+ 2 ; less than one page
 
-	ldy #0		; 2  2								; 9
-l2	sta (PTR1),Y; 6  2							
-	dey			; 2  1
-	sta (PTR1),Y; 6  2							
-	dey			; 2  1
-	bne l2		; 2+ 2 ; fill one page				; inner loop 19*128*X 9.5 per byte
+	ldy #0		; 2  2					; 9
+loop1	sta (PTR1),Y	; 6  2							
+	dey		; 2  1
+	sta (PTR1),Y	; 6  2							
+	dey		; 2  1
+	bne loop1	; 2+ 2 ; fill one page			; inner loop 19*128*X 9.5 per byte
 
-	inc PTR1+1  ; 5  2
-	dex			; 2  1
-	bne l2		; 2+ 2 ; advance to next page		; outer loop 10*X
+	inc PTR1+1  	; 5  2
+	dex		; 2  1
+	bne loop1	; 2+ 2 ; advance to next page		; outer loop 10*X
 		
-l1	ldy B3		; 3  2
-	beq l3		; 2+ 2								; 6
-l4	dey			; 2  1
-	sta (PTR1),Y; 6  2
-	bne l4		; 2+ 2 ; remaining bytes			; loop 11*Y
-l3	
-	rts			; 6	 1								; 6
-.endp												; total 9.5*X*256 + 11*Y + X*10 (per page overhead) + 21 (const overhead); 31 bytes
+remain	ldy B3		; 3  2
+	beq out		; 2+ 2					; 6
+loop2	dey		; 2  1
+	sta (PTR1),Y	; 6  2
+	bne loop2	; 2+ 2 ; remaining bytes		; loop 11*Y
+out	
+	rts		; 6	 1				; 6
+.endp								; total 9.5*X*256 + 11*Y + X*10 (per page overhead) + 21 (const overhead); 31 bytes
 
 ; A - value
 ; X - size H
@@ -119,11 +119,11 @@ l5	sta (PTR1),Y; 6  2								; fill two pages simultaneously
 	bne l5		; 2+ 2 ; advance to next doublepage	; outer loop 13 * X/2
 		
 l1	ldy B5		; 3  2
-	beq l3		; 2+ 2								; 6
+	beq out		; 2+ 2								; 6
 l4	dey			; 2  1
 	sta (PTR1),Y; 6  2
 	bne l4		; 2+ 2 ; remaining bytes			; loop 11*Y
-l3	
+out	
 	rts			; 6	 1								; 6
 .endp												; 70 bytes total
 
