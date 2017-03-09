@@ -1,5 +1,4 @@
 ; convert FASC result to CR terminated string
-
 .proc fasc2str
 	ldy #$FF
 fstr1	

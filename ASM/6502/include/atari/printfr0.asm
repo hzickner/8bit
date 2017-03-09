@@ -10,4 +10,4 @@
 	tya
 	
 	jmp putnchar
-.endp	
+.endp
