@@ -1,4 +1,7 @@
-
+; 03/09/2017	650 bytes
+; 20000		9	159	173	341
+; 03/09/2017	646 bytes	remove jsr fasc2str
+; 20000		9	159	172	340
 
 .DEF	NN	= 20000
 
@@ -7,7 +10,7 @@
 	ICL "../include/memset.asm"
 	ICL "../include/atari/printu16.asm"
 	ICL "../include/atari/printfr0.asm"
-	ICL "../include/atari/fasc2str.asm"
+;	ICL "../include/atari/fasc2str.asm"
 	ICL "../include/atari/putnchar.asm"
 	ICL "../include/atari/putstring.asm"
 	ICL "../include/atari/putc.asm"
