@@ -31,8 +31,11 @@ N	= 1000
 ; variables
 ; zero page
 PTR1	= $80
-W1	= $82
-u16_i	= $84
+W2	= $82
+W3	= $84
+W4	= $86
+B9	= $88
+u16_i	= $90
 
 	org $2000
 
@@ -59,8 +62,8 @@ STRBUF1	.DS 7		; string buffer for u16 variables
 ; A,X value
 ; STRBUF1 string buffer min legth=7
 .proc u16_2str
-	sta W1
-	stx W1+1
+	sta W2
+	stx W2+1
 	lda #STRBUF1&$FF
 	sta PTR1
 	lda #STRBUF1/256
@@ -69,31 +72,85 @@ STRBUF1	.DS 7		; string buffer for u16 variables
 	lda #CR
 	sta (PTR1),Y		; set last char to CR
 next		
-	lda W1
-	ldx W1+1
+	lda W2
+	ldx W2+1
 	jsr u16_mod10		; get next char
 	clc
 	adc #'0'
 	dey
 	sta (PTR1),Y
 	
-	lda W1
-	ldx W1+1
+	lda W2
+	ldx W2+1
 	jsr u16_div10
-	sta W1
-	stx W1+1		; value /= 10
+	sta W2
+	stx W2+1		; value /= 10
 	
-	ora W1+1
+	ora W2+1
 	bne next		; until value==0
 	
 	rts
 .endp
 
-.proc u16_mod10
-	rts
+; unsigned div by 10
+; A,X unsigned value
+; source: http://atariage.com/forums/blog/563/entry-11044-16-bit-division-fast-divide-by-10/
+.proc u16_div10
+	sta W3			;3  @3
+	stx W3+1		;3  @6
+	ldy #-2			;2  @8   skips a branch the first time through
+	txa		 	;2  @10
+do8bitDiv:
+	sta B9			;3  @13...86
+	lsr			;2  @15
+	adc #13			;2  @17
+	adc B9			;3  @20
+	ror			;2  @22
+	lsr			;2  @24
+	lsr			;2  @26
+	adc B9			;3  @29
+	ror			;2  @31
+	adc B9			;3  @34
+	ror			;2  @36
+	lsr			;2  @38
+	and #$7C		;2  @40   AND'ing here...
+	sta B9			;3  @43   and saving result as highTen (times 4)
+	lsr			;2  @45
+	lsr			;2  @47
+	iny			;2  @49
+	bpl finishLowTen	;2³ @51...125
+
+	sta W4+1		;3  @54
+	adc B9			;3  @57   highTen (times 5)
+	asl			;2  @59   highTen (times 10)
+	sbc W3+1		;3  @62
+	eor #$FF		;2  @64
+	tay			;2  @66   mod 10 result!
+
+	lda TensRemaining,Y	;4  @70   Fill the low byte with the tens it should
+	sta W4			;3  @73   have at this point from the high byte divide.
+	lda W3			;3  @76
+	adc ModRemaing,Y	;4  @80
+	bcc do8bitDiv		;2³ @82/83
+
+overflowFound:
+	cmp #4			;2  @84   We have overflowed, but we can apply a shortcut.
+	lda #25			;2  @86   Divide by 10 will be at least 25, and the
+				;         carry is set when higher for the next addition.
+finishLowTen:
+	adc W4			;3  @89...128
+	sta W4			;3  @92...131
+	ldx W4+1		;3  @95...134
+
+	rts			;6  @101...140	routine ends at either 101 or 140 cycles
+; tables	
+TensRemaining:
+	.byte 0,25,51,76,102,128,153,179,204,230
+ModRemaing:
+	.byte 0,6,2,8,4,0,6,2,8,4	
 .endp
 
-.proc u16_div10
+.proc u16_mod10
 	rts
 .endp
 	
