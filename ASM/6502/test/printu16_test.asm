@@ -7,8 +7,10 @@
 ; 03/13/2017-2	470 ticks
 ; printu16_3 using divmod10
 ; 03/13/2017	452 ticks
+; 03/13/2017	451 ticks
 ; printu16_4 using putstring (putc loop)
 ; 03/13/2017	394 ticks
+; 03/13/2017	392 ticks
 
 
  
@@ -59,7 +61,7 @@ u16_i	= $92
 ; variables
 ; RAM
 u16_tm1 .DS 2
-STRBUF1	.DS 7		; string buffer for u16 variables	
+STRBUF1	.DS 7		; string buffer for u16 variables, must not cross 256byte page boundary	
 	
 ; print 16bit unsigned value in A,X
 ; using OS FP routines
@@ -77,9 +79,8 @@ STRBUF1	.DS 7		; string buffer for u16 variables
 	clc
 	adc PTR1
 	sta PTR1
-	bcc @+
-	inc PTR1+1
-@	lda #6
+
+	lda #6
 	sec
 	sbc B3
 	jmp putnchar
@@ -92,9 +93,8 @@ STRBUF1	.DS 7		; string buffer for u16 variables
 	clc
 	adc PTR1
 	sta PTR1
-	bcc @+
-	inc PTR1+1
-@	lda #6
+
+	lda #6
 	sec
 	sbc B3
 	jmp putnchar
@@ -106,9 +106,7 @@ STRBUF1	.DS 7		; string buffer for u16 variables
 	clc
 	adc PTR1
 	sta PTR1
-	bcc @+
-	inc PTR1+1
-@
+
 	jmp putstring
 .endp
 
@@ -270,26 +268,25 @@ ModRemaing:
 ; unsigned div by 10
 ; A,X unsigned value
 .proc u16_mod10
-	sta W5			; save val low
+	sta W5			;3 	save val low
 
-	jsr u16_div10		; calc value / 10
-	sta W4			; we need only low byte from here
+	jsr u16_div10		;135 	calc value / 10
+	sta W4			;3 	we need only low byte from here
 	
-	asl			; x2
-	sta W3
-	asl			
-	asl			; x8
-	clc
-	adc W3			; += 2x
-	sta W4
-	
-	sec
-	lda W5
-	sbc W4
+	asl			;2 	x2
+	sta W3			;3
+	asl			;2
+	asl			;2 	x8
+	clc			;2
+	adc W3			;3 	+= 2x
 
-	ldx #0
+	eor #$FF		;2
+	sec			;2
+	adc W5			;2
+
+	ldx #0			;2
 	
-	rts
+	rts			;6  @179
 .endp
 
 ; unsigned div by 10
@@ -344,22 +341,22 @@ finishLowTen:
 	adc W4			;3  @86...123
 	sta W4
 	
-	asl
-	sta B11
-	asl
-	asl
-	clc
-	adc B11
-	sta W3+1
+	asl			;2
+	sta B11			;3
+	asl			;2
+	asl			;2
+	clc			;2
+	adc B11			;3
 	
-	lda W3
-	sec
-	sbc W3+1
-	tay
+	eor #$FF		;2
+	sec			;2
+	adc W3			;3	-A+W3	
 	
-	lda W4
+	tay			;2
+	
+	lda W4			;3
 
-	rts			;6  @95...132	routine ends at either 95 or 132 cycles
+	rts			;6  @118...155	routine ends at either 95 or 132 cycles
 ; tables	
 TensRemaining:
 	.byte 0,25,51,76,102,128,153,179,204,230
@@ -418,13 +415,11 @@ fstr1
 ;	PTR1 - pointer to message
 .proc putstring
 
-	ldy #0
-loop	lda (PTR1),Y
+loop	ldy #0
+	lda (PTR1),Y
 	beq out
-	sty B3
 	jsr putc
-	inc B3
-	ldy B3
+	inc PTR1
 	bne loop
 out	rts
 .endp
@@ -466,21 +461,21 @@ while1					; while(i<=N2)
 
 	lda u16_i
 	ldx u16_i+1
-	jsr printu16_4
+	jsr printu16
 	lda #' '
 	jsr putc
 	
 	lda u16_i
 	ldx u16_i+1
 	jsr u16_div10
-	jsr printu16_4
+	jsr printu16
 	lda #' '
 	jsr putc
 	
 	lda u16_i
 	ldx u16_i+1
 	jsr u16_mod10
-	jsr printu16_4
+	jsr printu16
 	lda #' '
 	jsr putc	
 	
