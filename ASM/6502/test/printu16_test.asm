@@ -123,8 +123,8 @@ STRBUF1	.DS 7		; string buffer for u16 variables
 	lda #STRBUF1/256
 	sta PTR1+1
 	ldy #6			; u16 max 5 chars + CR + 1 reserve
-	lda #CR
-	sta (PTR1),Y		; set last char to CR
+	lda #0
+	sta (PTR1),Y		; set last char to 0
 	sty B12
 next		
 	lda W2
@@ -163,8 +163,8 @@ next
 	lda #STRBUF1/256
 	sta PTR1+1
 	ldy #6			; u16 max 5 chars + CR + 1 reserve
-	lda #CR
-	sta (PTR1),Y		; set last char to CR
+	lda #0
+	sta (PTR1),Y		; set last char to 0
 	sty B12
 next		
 	lda W2
@@ -420,7 +420,6 @@ fstr1
 
 	ldy #0
 loop	lda (PTR1),Y
-	cmp #CR
 	beq out
 	sty B3
 	jsr putc
