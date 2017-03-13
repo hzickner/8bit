@@ -5,12 +5,15 @@
 ; printu16_2 using div10 and mod10
 ; 03/13/2017	482 ticks
 ; 03/13/2017-2	470 ticks
+; 03/13/2017-2	469 ticks
 ; printu16_3 using divmod10
 ; 03/13/2017	452 ticks
 ; 03/13/2017	451 ticks
+; 03/13/2017	450 ticks
 ; printu16_4 using putstring (putc loop)
 ; 03/13/2017	394 ticks
 ; 03/13/2017	392 ticks
+; 03/13/2017	391 ticks
 
 
  
@@ -75,37 +78,28 @@ STRBUF1	.DS 7		; string buffer for u16 variables, must not cross 256byte page bo
 ; print 16bit unsigned value in A,X
 .proc printu16_2
 	jsr u16_2str
-	sta B3
-	clc
-	adc PTR1
-	sta PTR1
-
-	lda #6
+	
+	lda #STRBUF1&$FF+6
 	sec
-	sbc B3
+	sbc PTR1
+
 	jmp putnchar
 .endp
 
 ; print 16bit unsigned value in A,X
 .proc printu16_3
 	jsr u16_2str_2
-	sta B3
-	clc
-	adc PTR1
-	sta PTR1
-
-	lda #6
+	
+	lda #STRBUF1&$FF+6
 	sec
-	sbc B3
+	sbc PTR1
+	
 	jmp putnchar
 .endp
 
 ; print 16bit unsigned value in A,X
 .proc printu16_4
 	jsr u16_2str_2
-	clc
-	adc PTR1
-	sta PTR1
 
 	jmp putstring
 .endp
@@ -117,22 +111,25 @@ STRBUF1	.DS 7		; string buffer for u16 variables, must not cross 256byte page bo
 	sta W2
 	stx W2+1
 	lda #STRBUF1&$FF
+	clc
+	adc #6
 	sta PTR1
 	lda #STRBUF1/256
 	sta PTR1+1
-	ldy #6			; u16 max 5 chars + CR + 1 reserve
+
 	lda #0
+	tay
 	sta (PTR1),Y		; set last char to 0
-	sty B12
+
 next		
 	lda W2
-	;ldx W2+1
+
 	jsr u16_mod10		; get next char
-	ldy B12			; restore Y
+
 	clc
 	adc #'0'
-	dey
-	sty B12			; save Y
+	dec PTR1
+	ldy #0
 	sta (PTR1),Y
 	
 	lda W2
@@ -143,8 +140,6 @@ next
 	
 	ora W2+1
 	bne next		; until value==0
-
-	lda B12			; offset of first char
 	
 	rts
 .endp
@@ -157,31 +152,32 @@ next
 	sta W2
 	stx W2+1
 	lda #STRBUF1&$FF
+	clc
+	adc #06
 	sta PTR1
 	lda #STRBUF1/256
 	sta PTR1+1
-	ldy #6			; u16 max 5 chars + CR + 1 reserve
+
 	lda #0
+	tay
 	sta (PTR1),Y		; set last char to 0
-	sty B12
-next		
 	lda W2
+next		
 	jsr u16_divmod10	; get next char and divide number by 10
 	sta W2
 	stx W2+1
 	tya
-	ldy B12			; restore Y
+	
 	clc
 	adc #'0'
-	dey
-	sty B12			; save Y
+	ldy #0
+	dec PTR1
 	sta (PTR1),Y
 	
 	lda W2
-	ora W2+1
-	bne next		; until value==0
-
-	lda B12			; offset of first char
+	bne next
+	ldy W2+1		; until value==0
+	bne next
 	
 	rts
 .endp
@@ -461,21 +457,21 @@ while1					; while(i<=N2)
 
 	lda u16_i
 	ldx u16_i+1
-	jsr printu16
+	jsr printu16_4
 	lda #' '
 	jsr putc
 	
 	lda u16_i
 	ldx u16_i+1
 	jsr u16_div10
-	jsr printu16
+	jsr printu16_4
 	lda #' '
 	jsr putc
 	
 	lda u16_i
 	ldx u16_i+1
 	jsr u16_mod10
-	jsr printu16
+	jsr printu16_4
 	lda #' '
 	jsr putc	
 	
