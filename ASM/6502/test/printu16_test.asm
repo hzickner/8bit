@@ -17,6 +17,7 @@
 ; 03/13/2017	391 ticks
 ; printu16_5 using BCD
 ; 03/14/2017	393 ticks
+; 03/14/2017	392 ticks
 
  
 ; equates
@@ -239,43 +240,43 @@ out:	rts
 .endp
 
 .proc printbcd20
-	lda #0
-	sta B8		; temp bool for leading zeroes
-	lda B7
+
+	lda #$0F
+	bit B7
+	bne c4
+	lda #$F0
+	bit B6
+	bne c3
+	lda #$0F
+	bit B6
+	bne c2
+	lda #$F0
+	bit B5
+	bne c1
+	beq c0		; skip leading zeroes and jump to first char
+			
+c4:	lda B7
 	and #$0F
-	beq c3
 	ora #'0'
-	sta B8
 	jsr putc
 
 c3:	lda B6
 	and $F0
-	bne @+
-	ldx B8
-	beq c2
-@	lsr
+	lsr
 	lsr
 	lsr
 	lsr
 	ora #'0'
-	sta B8
 	jsr putc
 
 c2:	lda B6
 	and #$0F
-	bne @+
-	ldx B8
-	beq c1
-@	ora #'0'
-	sta B8
+	ora #'0'
 	jsr putc
 
 c1:	lda B5
 	and #$F0
-	bne @+
-	ldx B8
-	beq c0
-@	lsr
+	lsr
 	lsr
 	lsr
 	lsr
@@ -391,6 +392,29 @@ ModRemaing:
 	rts			;6  @179
 .endp
 
+; divides a 32 bit value by 10
+; remainder is returned in akku
+.proc u16_divmod10_2
+	sta W3
+	stx W3+1
+	
+	ldy #16         ; 16 bits
+	lda #0
+	clc
+loop	rol
+	cmp #10
+	bcc skip
+	sbc #10
+skip	rol W3
+	rol W3+1
+        dey
+        bpl loop
+        tay
+        lda W3
+        ldx W3+1
+        rts
+.endp
+        
 ; unsigned div by 10
 ; A,X unsigned value
 ; Result AX = AX div 10; Y = AX mod 10
@@ -563,21 +587,21 @@ while1					; while(i<=N2)
 
 	lda u16_i
 	ldx u16_i+1
-	jsr printu16_5
+	jsr printu16_4
 	lda #' '
 	jsr putc
 	
 	lda u16_i
 	ldx u16_i+1
 	jsr u16_div10
-	jsr printu16_5
+	jsr printu16_4
 	lda #' '
 	jsr putc
 	
 	lda u16_i
 	ldx u16_i+1
 	jsr u16_mod10
-	jsr printu16_5
+	jsr printu16_4
 	lda #' '
 	jsr putc	
 	
