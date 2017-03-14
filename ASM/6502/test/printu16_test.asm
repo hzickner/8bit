@@ -6,6 +6,7 @@
 ; 03/13/2017	482 ticks
 ; 03/13/2017-2	470 ticks
 ; 03/13/2017-2	469 ticks
+; 03/13/2017-2	468 ticks
 ; printu16_3 using divmod10
 ; 03/13/2017	452 ticks
 ; 03/13/2017	451 ticks
@@ -14,7 +15,8 @@
 ; 03/13/2017	394 ticks
 ; 03/13/2017	392 ticks
 ; 03/13/2017	391 ticks
-
+; printu16_5 using BCD
+; 03/14/2017	393 ticks
 
  
 ; equates
@@ -50,13 +52,20 @@ N	= 531
 ; variables
 ; zero page
 PTR1	= $80
+
+W1	= $80
 W2	= $82
-B3	= $82
 W3	= $84
 W4	= $86
 W5	= $88
+
+B5	= $84
+B6	= $85
+B7	= $86
+B8	= $87
 B11	= $90
 B12	= $91
+
 u16_i	= $92
 
 	org $2000
@@ -104,6 +113,14 @@ STRBUF1	.DS 7		; string buffer for u16 variables, must not cross 256byte page bo
 	jmp putstring
 .endp
 
+; print 16bit unsigned value in A,X
+; using BCD
+.proc printu16_5
+	jsr u16_2bcd
+
+	jmp printbcd20
+.endp
+
 ; convert u16 binary to string base10
 ; A,X value
 ; STRBUF1 string buffer min legth=7
@@ -126,8 +143,7 @@ next
 
 	jsr u16_mod10		; get next char
 
-	clc
-	adc #'0'
+	ora #'0'
 	dec PTR1
 	ldy #0
 	sta (PTR1),Y
@@ -168,8 +184,7 @@ next
 	stx W2+1
 	tya
 	
-	clc
-	adc #'0'
+	ora #'0'		; '0' == $30, ora == add
 	ldy #0
 	dec PTR1
 	sta (PTR1),Y
@@ -180,6 +195,97 @@ next
 	bne next
 	
 	rts
+.endp
+
+; convert 16 bit binary to 20bit BCD number
+; input binary in A,X
+.proc u16_2bcd
+	sta W1
+	stx W1+1
+
+	ldx #0
+	stx B5
+	stx B6
+	stx B7
+
+	ora W1+1
+	beq out
+	
+	ldx #17
+	sed
+	
+skip:	asl W1
+	rol W1+1
+	dex
+	bcc skip
+		
+cnvbit:	
+	lda B5		; BCD = 2*BCD + bit
+	adc B5
+	sta B5
+	lda B6
+	adc B6
+	sta B6
+	lda B7
+	adc B7
+	sta B7
+	asl W1
+	rol W1+1
+	dex
+	bne cnvbit
+	
+	cld
+out:	rts
+.endp
+
+.proc printbcd20
+	lda #0
+	sta B8		; temp bool for leading zeroes
+	lda B7
+	and #$0F
+	beq c3
+	ora #'0'
+	sta B8
+	jsr putc
+
+c3:	lda B6
+	and $F0
+	bne @+
+	ldx B8
+	beq c2
+@	lsr
+	lsr
+	lsr
+	lsr
+	ora #'0'
+	sta B8
+	jsr putc
+
+c2:	lda B6
+	and #$0F
+	bne @+
+	ldx B8
+	beq c1
+@	ora #'0'
+	sta B8
+	jsr putc
+
+c1:	lda B5
+	and #$F0
+	bne @+
+	ldx B8
+	beq c0
+@	lsr
+	lsr
+	lsr
+	lsr
+	ora #'0'
+	jsr putc
+	
+c0:	lda B5		; always print last char
+	and #$0F
+	ora #'0'
+	jmp putc	
 .endp
 
 ; unsigned div by 10
@@ -437,7 +543,7 @@ out	rts
 
 	lda #N&255
 	ldx #N/256
-	jsr printu16_4
+	jsr printu16_5
 	lda #' '
 	jsr putc
 		
@@ -457,21 +563,21 @@ while1					; while(i<=N2)
 
 	lda u16_i
 	ldx u16_i+1
-	jsr printu16_4
+	jsr printu16_5
 	lda #' '
 	jsr putc
 	
 	lda u16_i
 	ldx u16_i+1
 	jsr u16_div10
-	jsr printu16_4
+	jsr printu16_5
 	lda #' '
 	jsr putc
 	
 	lda u16_i
 	ldx u16_i+1
 	jsr u16_mod10
-	jsr printu16_4
+	jsr printu16_5
 	lda #' '
 	jsr putc	
 	
