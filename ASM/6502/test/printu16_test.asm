@@ -395,24 +395,24 @@ ModRemaing:
 ; divides a 32 bit value by 10
 ; remainder is returned in akku
 .proc u16_divmod10_2
-	sta W3
-	stx W3+1
+	sta W3		;3
+	stx W3+1	;3
 	
-	ldy #16         ; 16 bits
-	lda #0
-	clc
-loop	rol
-	cmp #10
-	bcc skip
-	sbc #10
-skip	rol W3
-	rol W3+1
-        dey
-        bpl loop
-        tay
-        lda W3
-        ldx W3+1
-        rts
+	ldy #16         ;2	16 bits
+	lda #0		;2
+	clc		;2
+loop	rol		;2
+	cmp #10		;2
+	bcc skip	;2/3
+	sbc #10		;2
+skip	rol W3		;2
+	rol W3+1	;2
+        dey		;2
+        bpl loop	;2/3	max18 per it, 288max
+        tay		;2
+        lda W3		;3
+        ldx W3+1	;3
+        rts		;6	288loop + 26... 314worst case
 .endp
         
 ; unsigned div by 10
