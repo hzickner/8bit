@@ -115,6 +115,13 @@ STRBUF1	.DS 7		; string buffer for u16 variables, must not cross 256byte page bo
 .endp
 
 ; print 16bit unsigned value in A,X
+.proc printu16_6
+	jsr u16_2str_3
+
+	jmp putstring_2
+.endp
+
+; print 16bit unsigned value in A,X
 ; using BCD
 .proc printu16_5
 	jsr u16_2bcd
@@ -179,7 +186,7 @@ next
 	tay
 	sta (PTR1),Y		; set last char to 0
 	lda W2
-next		
+next
 	jsr u16_divmod10	; get next char and divide number by 10
 	sta W2
 	stx W2+1
@@ -193,6 +200,39 @@ next
 	lda W2
 	bne next
 	ldy W2+1		; until value==0
+	bne next
+	
+	rts
+.endp
+
+; convert u16 binary to string base10
+; use divmod
+; A,X value
+; STRBUF1 string buffer min legth=7
+.proc u16_2str_3
+	sta W2
+	stx W2+1
+
+	ldy #6
+	sty B12
+	lda #0
+	sta STRBUF1,Y		; set last char to 0
+	lda W2
+next
+	jsr u16_divmod10_3	; get next char and divide number by 10
+	sta W2
+	stx W2+1
+	tya
+	
+	ora #'0'		; '0' == $30, ora == add
+	ldy B12
+	dey
+	sty B12
+	sta STRBUF1,Y
+	
+	lda W2
+	bne next
+	ldx W2+1		; until value==0
 	bne next
 	
 	rts
@@ -239,10 +279,81 @@ cnvbit:
 out:	rts
 .endp
 
+; convert 16 bit binary to 20bit BCD number
+; input binary in A,X
+.proc u16_2bcd_2
+	sta W1
+	stx W1+1
+
+	ldx #0
+	stx B5
+	stx B6
+	stx B7
+
+	ora W1+1
+	beq out
+	
+	ldx #17
+	sed
+	
+skip:	asl W1
+	rol W1+1
+	dex
+	bcc skip
+	cpx #6
+	bcc cnvbit1_1
+	cpx #13
+	bcc cnvbit2_1
+
+cnvbit3:		; 3 byte result	
+	lda B5		; BCD = 2*BCD + bit
+	adc B5
+	sta B5
+	lda B6
+	adc B6
+	sta B6
+	lda B7
+	adc B7
+	sta B7
+	asl W1
+	rol W1+1
+	dex
+	bne cnvbit3
+	beq out2
+
+cnvbit2_1:
+	sec		
+cnvbit2:		; 2 byte result	
+	lda B5		; BCD = 2*BCD + bit
+	adc B5
+	sta B5
+	lda B6
+	adc B6
+	sta B6
+	asl W1
+	rol W1+1
+	dex
+	bne cnvbit2
+	beq out2
+
+cnvbit1_1:
+	sec
+	lda B5
+cnvbit1:		; 1 byte result
+			; BCD = 2*BCD + bit
+	adc B5
+	sta B5
+	asl W1+1
+	dex
+	bne cnvbit1
+					
+out2:	cld
+out:	rts
+.endp
+
 .proc printbcd20
 
-	lda #$0F
-	bit B7
+	lda B7
 	bne c4
 	lda #$F0
 	bit B6
@@ -489,6 +600,81 @@ TensRemaining:
 ModRemaing:
 	.byte 0,6,2,8,4,0,6,2,8,4	
 .endp
+
+; unsigned div by 10
+; A,X unsigned value
+; Result AX = AX div 10; Y = AX mod 10
+; source: http://atariage.com/forums/blog/563/entry-11044-16-bit-division-fast-divide-by-10/
+.proc u16_divmod10_3
+	sta W3			;3  @3
+	stx W3+1		;3  @6
+	ldy #-2			;2  @8   skips a branch the first time through
+	txa		 	;2  @10
+do8bitDiv:
+
+  	lsr			;2  @12...82
+  	sta B11			;3  @15
+  	lsr			;2  @17
+	adc B11			;3  @20
+  	ror			;2  @22
+  	lsr			;2  @24
+  	lsr			;2  @26
+  	adc B11			;3  @29
+  	ror			;2  @31
+  	adc B11			;3  @34
+  	ror			;2  @36
+  	and #$7C		;2  @38  AND'ing here...
+  	sta B11			;3  @41  and saving result as highTen (times 4)
+  	lsr			;2  @43
+  	lsr			;2  @45...115
+  
+	iny			;2  @47
+	bpl finishLowTen	;2³ @49...120
+
+	sta W2+1		;2  @51
+
+	adc B11			;3  @54   highTen (times 5)
+	asl			;2  @56   highTen (times 10)
+	sbc W3+1		;3  @59
+	eor #$FF		;2  @61
+	tay			;2  @63   mod 10 result!
+
+	lda TensRemaining,Y	;4  @67   Fill the low byte with the tens it should
+	sta W2			;3  @70   have at this point from the high byte divide.
+	lda W3			;3  @73
+	adc ModRemaing,Y	;4  @77
+	bcc do8bitDiv		;2³ @79/80
+
+overflowFound:
+	cmp #4			;2  @81   We have overflowed, but we can apply a shortcut.
+	lda #25			;2  @83   Divide by 10 will be at least 25, and the
+				;         carry is set when higher for the next addition.
+finishLowTen:
+	adc W2			;3  @86...123
+	sta W2
+	
+	asl			;2
+	sta B11			;3
+	asl			;2
+	asl			;2
+	clc			;2
+	adc B11			;3
+	
+	eor #$FF		;2
+	sec			;2
+	adc W3			;3	-A+W3	
+	
+	tay			;2
+	
+	lda W2			;3
+
+	rts			;6  @118...155	routine ends at either 95 or 132 cycles
+; tables	
+TensRemaining:
+	.byte 0,25,51,76,102,128,153,179,204,230
+ModRemaing:
+	.byte 0,6,2,8,4,0,6,2,8,4	
+.endp
 	
 ; print value in FR0 to console
 ; modifies PTR1
@@ -550,16 +736,30 @@ loop	ldy #0
 out	rts
 .endp
 
+; write string to console
+;	PTR1 - pointer to message
+.proc putstring_2
+	
+loop	lda STRBUF1,Y
+	beq out
+	sty B11
+	jsr putc
+	ldy B11
+	iny
+	bne loop
+out	rts
+.endp
+
 ; put character on screen
 ;	args char in A
 ;	changes Y
 .proc putc
-	tay			; 2
+	tax			; 2
 	lda ICPTH		; 4
 	pha			; 3
 	lda ICPTL		; 4 push address of OS putchar on stack
 	pha			; 3
-	tya			; 2
+	txa			; 2
 	rts			; 6 call OS putchar via rts	24 total
 .endp
 
@@ -567,7 +767,7 @@ out	rts
 
 	lda #N&255
 	ldx #N/256
-	jsr printu16_5
+	jsr printu16_6
 	lda #' '
 	jsr putc
 		
@@ -587,21 +787,21 @@ while1					; while(i<=N2)
 
 	lda u16_i
 	ldx u16_i+1
-	jsr printu16_4
+	jsr printu16_6
 	lda #' '
 	jsr putc
 	
 	lda u16_i
 	ldx u16_i+1
 	jsr u16_div10
-	jsr printu16_4
+	jsr printu16_6
 	lda #' '
 	jsr putc
 	
 	lda u16_i
 	ldx u16_i+1
 	jsr u16_mod10
-	jsr printu16_4
+	jsr printu16_6
 	lda #' '
 	jsr putc	
 	
