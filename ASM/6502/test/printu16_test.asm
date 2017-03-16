@@ -515,7 +515,7 @@ ModRemaing:
 .endp
 
 ; divides a 8 bit value by 10
-; remainder is returned in Y
+; remainder is returned in A
 .proc u8_divmod10_2
 
 	lda W2
@@ -560,21 +560,21 @@ out	rts		;6
  	sta W3			; div result
  	adc B11
  	asl
- 	sbc W3
+ 	sbc W2
  	eor #$FF		; mod result
- 	tay
- 	lda W3
- 	sta W2
+ 	
+ 	ldy W3
+ 	sty W2
  	rts
 .endp 	
 
 
 ; divides a 16 bit value by 10
-; remainder is returned in Y
+; remainder is returned in A
 .proc u16_divmod10_2
 	
 	lda W2+1
-	beq u8_divmod10_2
+	beq u8_divmod10_3
 	
 	ldy #16         ;2	16 bits
 	clc
