@@ -18,6 +18,7 @@
 ; printu16_5 using BCD
 ; 03/14/2017	393 ticks
 ; 03/14/2017	392 ticks
+; 03/15/2017	381 ticks
 
  
 ; equates
@@ -48,7 +49,9 @@ CR	= $9B
 
 
 ; constants
+;N	= 531		; benchmark
 N	= 531
+N1	= 0
 
 ; variables
 ; zero page
@@ -213,26 +216,22 @@ next
 	sta W2
 	stx W2+1
 
-	ldy #6
-	sty B12
+	ldx #6
 	lda #0
-	sta STRBUF1,Y		; set last char to 0
-	lda W2
+	sta STRBUF1,X		; set last char to 0
+
 next
-	jsr u16_divmod10_3	; get next char and divide number by 10
-	sta W2
-	stx W2+1
-	tya
+	jsr u16_divmod10_2	; get next char and divide number by 10
 	
 	ora #'0'		; '0' == $30, ora == add
-	ldy B12
-	dey
-	sty B12
-	sta STRBUF1,Y
+
+	dex
+
+	sta STRBUF1,X
 	
 	lda W2
 	bne next
-	ldx W2+1		; until value==0
+	ldy W2+1		; until value==0
 	bne next
 	
 	rts
@@ -249,8 +248,8 @@ next
 	stx B6
 	stx B7
 
-	ora W1+1
-	beq out
+	lda W1+1
+	beq u8_2bcd.u8bcd1
 	
 	ldx #17
 	sed
@@ -272,6 +271,39 @@ cnvbit:
 	sta B7
 	asl W1
 	rol W1+1
+	dex
+	bne cnvbit
+	
+	cld
+out:	rts
+.endp
+
+; convert 8 bit binary to 20bit BCD number
+; input binary in W1
+.proc u8_2bcd
+
+	ldx #0
+	stx B5
+	stx B6
+
+u8bcd1:	lda W1
+	beq out
+	
+	ldx #9
+	sed
+	
+skip:	asl W1
+	dex
+	bcc skip
+		
+cnvbit:	
+	lda B5		; BCD = 2*BCD + bit
+	adc B5
+	sta B5
+	lda B6
+	adc B6
+	sta B6
+	asl W1
 	dex
 	bne cnvbit
 	
@@ -355,24 +387,22 @@ out:	rts
 
 	lda B7
 	bne c4
-	lda #$F0
-	bit B6
-	bne c3
-	lda #$0F
-	bit B6
-	bne c2
-	lda #$F0
-	bit B5
-	bne c1
-	beq c0		; skip leading zeroes and jump to first char
+	lda B6
+	cmp #$10
+	bcs c3
+	cmp #$01
+	bcs c2
+	lda B5
+	cmp #$10
+	bcs c1
+	bcc c0		; jump to first char != 0
 			
-c4:	lda B7
-	and #$0F
+c4:	and #$0F
 	ora #'0'
 	jsr putc
 
-c3:	lda B6
-	and $F0
+	lda B6
+c3:	and #$F0
 	lsr
 	lsr
 	lsr
@@ -380,13 +410,13 @@ c3:	lda B6
 	ora #'0'
 	jsr putc
 
-c2:	lda B6
-	and #$0F
+	lda B6
+c2:	and #$0F
 	ora #'0'
 	jsr putc
 
-c1:	lda B5
-	and #$F0
+	lda B5
+c1:	and #$F0
 	lsr
 	lsr
 	lsr
@@ -394,11 +424,13 @@ c1:	lda B5
 	ora #'0'
 	jsr putc
 	
-c0:	lda B5		; always print last char
-	and #$0F
+	lda B5		; always print last char
+c0:	and #$0F
 	ora #'0'
 	jmp putc	
 .endp
+
+
 
 ; unsigned div by 10
 ; A,X unsigned value
@@ -426,27 +458,9 @@ do8bitDiv:
   	lsr			;2  @43
   	lsr			;2  @45...115
   
-;	sta B11			;3  @13...86
-;	lsr			;2  @15
-;	adc #13			;2  @17
-;	adc B11			;3  @20
-;	ror			;2  @22
-;	lsr			;2  @24
-;	lsr			;2  @26
-;	adc B11			;3  @29
-;	ror			;2  @31
-;	adc B11			;3  @34
-;	ror			;2  @36
-;	lsr			;2  @38
-;	and #$7C		;2  @40   AND'ing here...
-;	sta B11			;3  @43   and saving result as highTen (times 4)
-;	lsr			;2  @45
-;	lsr			;2  @47
-
 	iny			;2  @47
 	bpl finishLowTen	;2³ @49...120
 
-	;sta W4+1		;
 	tax			;2  @51
 
 	adc B11			;3  @54   highTen (times 5)
@@ -467,9 +481,6 @@ overflowFound:
 				;         carry is set when higher for the next addition.
 finishLowTen:
 	adc W4			;3  @86...123
-	;sta W4			;3  @89
-
-	;ldx W4+1		;3  @95...
 
 	rts			;6  @92...129	routine ends at either 95 or 132 cycles
 ; tables	
@@ -503,27 +514,85 @@ ModRemaing:
 	rts			;6  @179
 .endp
 
-; divides a 32 bit value by 10
-; remainder is returned in akku
-.proc u16_divmod10_2
-	sta W3		;3
-	stx W3+1	;3
+; divides a 8 bit value by 10
+; remainder is returned in Y
+.proc u8_divmod10_2
+
+	lda W2
+	beq out
+		
+	ldy #8	        ;2	8 bits
+	clc
+l1	rol W2
+	dey
+	bcc l1
 	
-	ldy #16         ;2	16 bits
 	lda #0		;2
-	clc		;2
 loop	rol		;2
 	cmp #10		;2
 	bcc skip	;2/3
 	sbc #10		;2
-skip	rol W3		;2
-	rol W3+1	;2
+skip	rol W2		;2
+        dey		;2
+        bpl loop	;2/3	max16 per it, 128max
+out	rts		;6
+.endp
+
+; divides a 8 bit value by 10
+; remainder is returned in Y
+.proc u8_divmod10_3
+	lda W2
+	lsr
+	sta  B11
+ 	lsr
+	adc  B11
+ 	ror
+ 	lsr
+ 	lsr
+ 	adc  B11
+ 	ror
+ 	adc  B11
+ 	ror
+	and #$7C		;2  @38  AND'ing here...
+  	sta B11			;3  @41  and saving result as highTen (times 4) 	
+ 	lsr
+ 	lsr
+ 	sta W3			; div result
+ 	adc B11
+ 	asl
+ 	sbc W3
+ 	eor #$FF		; mod result
+ 	tay
+ 	lda W3
+ 	sta W2
+ 	rts
+.endp 	
+
+
+; divides a 16 bit value by 10
+; remainder is returned in Y
+.proc u16_divmod10_2
+	
+	lda W2+1
+	beq u8_divmod10_2
+	
+	ldy #16         ;2	16 bits
+	clc
+l1	rol W2
+	rol W2+1
+	dey
+	bcc l1
+
+	lda #0		;2
+loop	rol		;2
+	cmp #10		;2
+	bcc skip	;2/3
+	sbc #10		;2
+skip	rol W2		;2
+	rol W2+1	;2
         dey		;2
         bpl loop	;2/3	max18 per it, 288max
-        tay		;2
-        lda W3		;3
-        ldx W3+1	;3
-        rts		;6	288loop + 26... 314worst case
+        rts		;6
 .endp
         
 ; unsigned div by 10
@@ -593,7 +662,7 @@ finishLowTen:
 	
 	lda W4			;3
 
-	rts			;6  @118...155	routine ends at either 95 or 132 cycles
+	rts			;6  @118...155	routine ends at either
 ; tables	
 TensRemaining:
 	.byte 0,25,51,76,102,128,153,179,204,230
@@ -602,56 +671,55 @@ ModRemaing:
 .endp
 
 ; unsigned div by 10
-; A,X unsigned value
-; Result AX = AX div 10; Y = AX mod 10
+; W2 unsigned value
+; Result W2 = W2 div 10; Y = AX mod 10
 ; source: http://atariage.com/forums/blog/563/entry-11044-16-bit-division-fast-divide-by-10/
 .proc u16_divmod10_3
-	sta W3			;3  @3
-	stx W3+1		;3  @6
-	ldy #-2			;2  @8   skips a branch the first time through
-	txa		 	;2  @10
+
+	ldy #-2			;2  @2   skips a branch the first time through
+	lda W2+1	 	;2  @4
 do8bitDiv:
 
-  	lsr			;2  @12...82
-  	sta B11			;3  @15
-  	lsr			;2  @17
-	adc B11			;3  @20
-  	ror			;2  @22
-  	lsr			;2  @24
-  	lsr			;2  @26
-  	adc B11			;3  @29
-  	ror			;2  @31
-  	adc B11			;3  @34
-  	ror			;2  @36
-  	and #$7C		;2  @38  AND'ing here...
-  	sta B11			;3  @41  and saving result as highTen (times 4)
-  	lsr			;2  @43
-  	lsr			;2  @45...115
+  	lsr			;2  @6...74
+  	sta B11			;3  @9
+  	lsr			;2  @11
+	adc B11			;3  @14
+  	ror			;2  @16
+  	lsr			;2  @18
+  	lsr			;2  @20
+  	adc B11			;3  @23
+  	ror			;2  @25
+  	adc B11			;3  @28
+  	ror			;2  @30
+  	and #$7C		;2  @32  AND'ing here...
+  	sta B11			;3  @35  and saving result as highTen (times 4)
+  	lsr			;2  @37
+  	lsr			;2  @39...107
   
-	iny			;2  @47
-	bpl finishLowTen	;2³ @49...120
+	iny			;2  @41
+	bpl finishLowTen	;2³ @43...112
 
-	sta W2+1		;2  @51
+	sta W3+1		;3  @46
 
-	adc B11			;3  @54   highTen (times 5)
-	asl			;2  @56   highTen (times 10)
-	sbc W3+1		;3  @59
-	eor #$FF		;2  @61
-	tay			;2  @63   mod 10 result!
+	adc B11			;3  @49   highTen (times 5)
+	asl			;2  @51   highTen (times 10)
+	sbc W2+1		;3  @54
+	eor #$FF		;2  @56
+	tay			;2  @58   mod 10 result!
 
-	lda TensRemaining,Y	;4  @67   Fill the low byte with the tens it should
-	sta W2			;3  @70   have at this point from the high byte divide.
-	lda W3			;3  @73
-	adc ModRemaing,Y	;4  @77
-	bcc do8bitDiv		;2³ @79/80
+	lda TensRemaining,Y	;4  @62   Fill the low byte with the tens it should
+	sta W3			;3  @65   have at this point from the high byte divide.
+	lda W2			;3  @68
+	adc ModRemaing,Y	;4  @72
+	bcc do8bitDiv		;2³ @74/75
 
 overflowFound:
-	cmp #4			;2  @81   We have overflowed, but we can apply a shortcut.
-	lda #25			;2  @83   Divide by 10 will be at least 25, and the
+	cmp #4			;2  @76   We have overflowed, but we can apply a shortcut.
+	lda #25			;2  @78   Divide by 10 will be at least 25, and the
 				;         carry is set when higher for the next addition.
 finishLowTen:
-	adc W2			;3  @86...123
-	sta W2
+	adc W3			;3  @81...115
+	sta W3			;3
 	
 	asl			;2
 	sta B11			;3
@@ -662,13 +730,13 @@ finishLowTen:
 	
 	eor #$FF		;2
 	sec			;2
-	adc W3			;3	-A+W3	
+	adc W2			;3	-A+W3	
 	
-	tay			;2
-	
-	lda W2			;3
-
-	rts			;6  @118...155	routine ends at either 95 or 132 cycles
+	ldy W3			;3
+	sty W2			;3
+	ldy W3+1		;3
+	sty W2+1		;3
+	rts			;6  @123...157	routine ends at either 
 ; tables	
 TensRemaining:
 	.byte 0,25,51,76,102,128,153,179,204,230
@@ -739,13 +807,12 @@ out	rts
 ; write string to console
 ;	PTR1 - pointer to message
 .proc putstring_2
-	
-loop	lda STRBUF1,Y
-	beq out
-	sty B11
+	stx B11
+loop	ldx B11
+	lda STRBUF1,X
+	beq out	
 	jsr putc
-	ldy B11
-	iny
+	inc B11
 	bne loop
 out	rts
 .endp
@@ -754,20 +821,20 @@ out	rts
 ;	args char in A
 ;	changes Y
 .proc putc
-	tax			; 2
+	tay			; 2
 	lda ICPTH		; 4
 	pha			; 3
 	lda ICPTL		; 4 push address of OS putchar on stack
 	pha			; 3
-	txa			; 2
+	tya			; 2
 	rts			; 6 call OS putchar via rts	24 total
 .endp
 
 .proc main
 
-	lda #N&255
-	ldx #N/256
-	jsr printu16_6
+	lda #1099&255
+	ldx #1099/256
+	jsr printu16_5
 	lda #' '
 	jsr putc
 		
@@ -775,7 +842,9 @@ out	rts
 	sta 19
 	sta 20				; set timer to 0
 	
+	lda #N1&$FF
 	sta u16_i
+	lda #N1/256
 	sta u16_i+1			; i=0
 
 while1					; while(i<=N2)
