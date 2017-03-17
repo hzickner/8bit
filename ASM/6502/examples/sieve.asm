@@ -2,6 +2,8 @@
 ; 20000		9	159	173	341
 ; 03/09/2017	646 bytes	remove jsr fasc2str
 ; 20000		9	159	172	340
+; 03/17/2017	646 bytes	new io functions
+; 20000		9	159	131	299
 
 .DEF	NN	= 20000
 
@@ -9,12 +11,11 @@
 
 	ICL "../include/memset.asm"
 	ICL "../include/atari/printu16.asm"
-	ICL "../include/atari/printfr0.asm"
-;	ICL "../include/atari/fasc2str.asm"
-	ICL "../include/atari/putnchar.asm"
+	ICL "../include/u16_2bcd.asm"
+	ICL "../include/u16_2bcd16.asm"
+	ICL "../include/atari/printbcd20.asm"
 	ICL "../include/atari/putstring.asm"
 	ICL "../include/atari/putc.asm"
-;	ICL "asmlib/u16_div10.asm"
 
 .align $100
 .proc main
@@ -278,6 +279,8 @@ W2	= $82
 
 B3	= $82
 B5	= $84
+B6	= $85
+B7	= $86
 
 
 ; CIO equates for IOCB0
@@ -303,10 +306,10 @@ INBUFF		= $F3	; 2 byte pointer to input buffer
 FASC		= $D8E6	; floating point to ATASCII, LBUFF = (string)FR0, INBUFF = last char
 IFP		= $D9AA ; 16bit integer in FR0 to floating point in FR0 
 
-STR1		.byte ' PRIMES IN',CR
-STR2		.byte ' TICKS',CR
-STR3		.byte ' BYTES CLEARED IN',CR
-STR4		.byte ' TICKS TOTAL',CR
+STR1		.byte ' PRIMES IN',CR,0
+STR2		.byte ' TICKS',CR,0
+STR3		.byte ' BYTES CLEARED IN',CR,0
+STR4		.byte ' TICKS TOTAL',CR,0
 u16_k		= $88
 u16_i		= $90
 u16_count	= $92
