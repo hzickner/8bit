@@ -17,7 +17,6 @@
 	ICL "../include/atari/putstring.asm"
 	ICL "../include/atari/putc.asm"
 
-.align $100
 .proc main
 	lda #0
 	sta 19
