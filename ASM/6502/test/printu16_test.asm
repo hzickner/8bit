@@ -50,7 +50,7 @@ CR	= $9B
 
 ; constants
 ;N	= 531		; benchmark
-N	= 531
+N	= $FFFF
 N1	= 0
 
 ; variables
@@ -237,19 +237,26 @@ next
 	rts
 .endp
 
+.align $0100
 ; convert 16 bit binary to 20bit BCD number
 ; input binary in A,X
 .proc u16_2bcd
 	sta W1
 	stx W1+1
 
-	ldx #0
-	stx B5
-	stx B6
-	stx B7
+	ldy #0
+	sty B5
+	sty B6
+	sty B7
 
-	lda W1+1
-	beq u8_2bcd.u8bcd1
+	;lda W1+1
+	;beq u8_2bcd.u8bcd1
+	ora W1+1
+	beq out
+	;lda W1
+	
+	cpx #$27
+	bcc u16_2bcd16.u16_2bcd16_1
 	
 	ldx #17
 	sed
@@ -269,6 +276,46 @@ cnvbit:
 	lda B7
 	adc B7
 	sta B7
+	asl W1
+	rol W1+1
+	dex
+	bne cnvbit
+	
+	cld
+out:	rts
+.endp
+
+; convert 16 bit binary to 20bit BCD number
+; input binary in A,X
+.proc u16_2bcd16
+	sta W1
+	stx W1+1
+
+	ldx #0
+	stx B5
+	stx B6
+
+	;lda W1+1
+	;beq u8_2bcd.u8bcd1
+	ora W1+1
+	beq out
+	
+u16_2bcd16_1
+	ldx #17
+	sed
+	
+skip:	asl W1
+	rol W1+1
+	dex
+	bcc skip
+		
+cnvbit:	
+	lda B5		; BCD = 2*BCD + bit
+	adc B5
+	sta B5
+	lda B6
+	adc B6
+	sta B6
 	asl W1
 	rol W1+1
 	dex
@@ -332,9 +379,9 @@ skip:	asl W1
 	rol W1+1
 	dex
 	bcc skip
-	cpx #6
-	bcc cnvbit1_1
-	cpx #13
+;	cpx #7
+;	bcc cnvbit1_1
+	cpx #14
 	bcc cnvbit2_1
 
 cnvbit3:		; 3 byte result	
@@ -351,7 +398,8 @@ cnvbit3:		; 3 byte result
 	rol W1+1
 	dex
 	bne cnvbit3
-	beq out2
+	cld
+	rts
 
 cnvbit2_1:
 	sec		
@@ -366,7 +414,8 @@ cnvbit2:		; 2 byte result
 	rol W1+1
 	dex
 	bne cnvbit2
-	beq out2
+	cld
+	rts
 
 cnvbit1_1:
 	sec
@@ -379,10 +428,11 @@ cnvbit1:		; 1 byte result
 	dex
 	bne cnvbit1
 					
-out2:	cld
+	cld
 out:	rts
 .endp
 
+.align $0100
 .proc printbcd20
 
 	lda B7
@@ -594,7 +644,8 @@ skip	rol W2		;2
         bpl loop	;2/3	max18 per it, 288max
         rts		;6
 .endp
-        
+
+.align $0100        
 ; unsigned div by 10
 ; A,X unsigned value
 ; Result AX = AX div 10; Y = AX mod 10
@@ -832,8 +883,8 @@ out	rts
 
 .proc main
 
-	lda #1099&255
-	ldx #1099/256
+	lda #N&255
+	ldx #N/256
 	jsr printu16_5
 	lda #' '
 	jsr putc
@@ -856,21 +907,21 @@ while1					; while(i<=N2)
 
 	lda u16_i
 	ldx u16_i+1
-	jsr printu16_6
+	jsr printu16_5
 	lda #' '
 	jsr putc
 	
 	lda u16_i
 	ldx u16_i+1
 	jsr u16_div10
-	jsr printu16_6
+	jsr printu16_5
 	lda #' '
 	jsr putc
 	
 	lda u16_i
 	ldx u16_i+1
 	jsr u16_mod10
-	jsr printu16_6
+	jsr printu16_5
 	lda #' '
 	jsr putc	
 	
@@ -897,4 +948,51 @@ l1	jmp l1
 	rts
 .endp
 
-	run main	
+.proc main2
+
+	lda #0
+	sta 19
+	sta 20				; set timer to 0
+	
+	lda #N1&$FF
+	sta u16_i
+	lda #N1/256
+	sta u16_i+1			; i=0
+
+while1					; while(i<=N2)
+	lda #N&$FF
+	cmp u16_i
+	lda #N/256
+	sbc u16_i+1
+	bcc while1out			; i>st
+
+	lda u16_i
+	ldx u16_i+1
+	jsr printu16_5
+	lda #' '
+	jsr putc
+		
+	inc u16_i
+	bne while1
+	inc u16_i+1			; i++
+	bne while1			; end while1
+while1out
+
+	lda 20
+	ldx 19				; read memset time
+	sta u16_tm1
+	stx u16_tm1+1
+
+;
+; print timings
+	lda #CR
+	jsr putc
+	lda u16_tm1
+	ldx u16_tm1+1
+	jsr printu16	
+
+l1	jmp l1
+	rts
+.endp
+
+	run main2	
