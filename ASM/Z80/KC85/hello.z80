@@ -1,0 +1,37 @@
+	CPU Z80
+
+CODEBASE	EQU 0200H
+
+	ORG CODEBASE-80H	; 128byte file header before start of code
+	
+
+; CAOS file header
+	DEFB "HELLO   KCC"	; 11 chars!
+	DEFB 5 dup (0)
+	DEFB 2 			;=3 mit SS-ADR
+	DEFW AAMAIN
+	DEFW EEMAIN
+	DEFW 0 			;nur bei SS
+	DEFB 105 dup (0)	; fill block
+
+; start of code
+AAMAIN EQU $
+
+; magic command header for CAOS menu
+	DEFW 7F7FH
+	DEFB "HELLO"
+	DEFB 01
+
+;
+; print string "HELLO WORLD!"
+	CALL 0F003H		; call OS
+	DEFB 23H		; subroutine 23H prints 0-terminated string
+	DEFB "HELLO WORLD!"	; define string
+	DEFW 0D0AH		; newline + carriage return
+	DEFB 0			; terminate string with 0
+	
+	RET			; return
+
+; end of code	
+EEMAIN EQU $	
+	

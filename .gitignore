@@ -2,3 +2,5 @@
 *.lab
 *.lst
 *.xex
+*.p
+*.kcc
