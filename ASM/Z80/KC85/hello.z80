@@ -33,5 +33,17 @@ AAMAIN EQU $
 	RET			; return
 
 ; end of code	
-EEMAIN EQU $	
+EEMAIN EQU $
+
+;
+; fill last 128byte block with 0 
+EELAST EQU ($+127)/128*128
+FILL	EQU EELAST-EEMAIN
+	REPT FILL
+	DEFB 0
+	ENDM
+
+	
+	
+
 	
