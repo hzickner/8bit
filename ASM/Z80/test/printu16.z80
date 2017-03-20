@@ -1,0 +1,150 @@
+	CPU Z80
+
+CODEBASE	EQU 0200H
+
+	ORG CODEBASE-80H	; 128byte file header before start of code
+	
+
+; CAOS file header
+	DEFB "PRINT",0,0,0,0,0,0	; name 11 chars!
+	DEFB 5 dup (0)
+	DEFB 2 			;=3 mit SS-ADR
+	DEFW AAMAIN
+	DEFW EEMAIN
+	DEFW 0 			;nur bei SS
+	DEFB 105 dup (0)	; fill block
+
+; start of code
+AAMAIN EQU $
+
+;
+; putc makro
+putc	macro
+	call	0F003H
+	defb	0
+	endm
+
+printu16 macro
+	call u16_2bcd
+	call printbcd20
+	endm
+		
+newline	macro
+	ld	A,0AH		; LF
+	putc
+	ld	A,0DH		; CR
+	putc	
+	endm
+	
+	
+; magic command header for CAOS menu
+	DEFW 7F7FH
+	DEFB "PRINT"
+	DEFB 01
+
+u16_n	EQU	500
+
+main:
+	ld hl,1234
+	printu16
+	newline
+	
+	ld hl,0
+l1:	inc hl
+	push hl
+	printu16
+	ld a,' '
+	putc
+	pop hl
+	ld a,h
+	cp u16_n/256
+	jr c,l1
+	ld a,l
+	cp u16_n&0FFH
+	jr c,l1
+	newline
+	RET			; return
+	
+;
+; u16_2bcd
+; input: HL = unsigned integer to convert
+; output: C:DE = 6-digit BCD number
+u16_2bcd: 
+	LD BC, 16*256+0 	; 10 	handle 16 bits, one bit per iteration; b=16 c=0
+	LD DE, 0		; 10
+
+cvtLoop:
+	ADD HL, HL		; 11 
+	LD A, E			; 4
+	ADC A, A		; 4
+	DAA			; 4
+	LD E, A			; 4
+	LD A, D			; 4
+	ADC A, A		; 4
+	DAA			; 4
+	LD D, A			; 4
+	LD A, C			; 4
+	ADC A, A		; 4
+	DAA			; 4
+	LD C, A			; 4
+	DJNZ cvtLoop		; 13/8 	72cy/iteration
+	
+
+	RET			; 10
+
+; printbcd20
+; input: C:DE bcd number to be printed
+printbcd20:
+	ld a,c
+	jr nz,c4
+	ld a,d
+	cp 010h
+	jr nc,c3
+	cp 01h
+	jr nc,c2
+	ld a,e
+	cp 010h
+	jr nc,c1
+	jr c,c0
+	
+c4:	CALL cvtLowerNibble
+	LD A, D
+c3:	CALL cvtUpperNibble
+	LD A, D
+c2:	CALL cvtLowerNibble
+	LD A, E
+c1:	CALL cvtUpperNibble
+	LD A, E
+	JR cvtLowerNibble
+cvtUpperNibble:
+	RRA ; move upper nibble into lower nibble
+	RRA
+	RRA
+	RRA
+c0:	
+cvtLowerNibble:
+	AND A, 0Fh 	; isolate lower nibble
+;	ADD A, 90h 	; old trick
+;	DAA 		; for converting
+;	ADC A, 40h 	; one nibble
+;	DAA 		; to hex ASCII
+	add a,030h
+	putc
+	RET	
+
+	
+; end of code	
+EEMAIN EQU $
+
+;
+; fill last 128byte block with 0 
+EELAST EQU ($+127)&0FF80H
+FILL	EQU EELAST-EEMAIN
+	REPT FILL
+	DEFB 0
+	ENDM
+
+	
+	
+
+	
