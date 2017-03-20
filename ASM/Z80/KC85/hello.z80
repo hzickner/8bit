@@ -6,7 +6,7 @@ CODEBASE	EQU 0200H
 	
 
 ; CAOS file header
-	DEFB "HELLO   KCC"	; 11 chars!
+	DEFB "HELLO",0,0,0,0,0,0	; name 11 chars!
 	DEFB 5 dup (0)
 	DEFB 2 			;=3 mit SS-ADR
 	DEFW AAMAIN
@@ -37,7 +37,7 @@ EEMAIN EQU $
 
 ;
 ; fill last 128byte block with 0 
-EELAST EQU ($+127)/128*128
+EELAST EQU ($+127)&0FF80H
 FILL	EQU EELAST-EEMAIN
 	REPT FILL
 	DEFB 0
