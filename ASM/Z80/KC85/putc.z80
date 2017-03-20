@@ -1,0 +1,64 @@
+	CPU Z80
+
+CODEBASE	EQU 0200H
+
+	ORG CODEBASE-80H	; 128byte file header before start of code
+	
+
+; CAOS file header
+	DEFB "PUTC",0,0,0,0,0,0,0	; name 11 chars!
+	DEFB 5 dup (0)
+	DEFB 2 			;=3 mit SS-ADR
+	DEFW AAMAIN
+	DEFW EEMAIN
+	DEFW 0 			;nur bei SS
+	DEFB 105 dup (0)	; fill block
+
+; start of code
+AAMAIN EQU $
+
+; magic command header for CAOS menu
+	DEFW 7F7FH
+	DEFB "PUTC"
+	DEFB 01
+
+
+;
+; putc makro
+putc	macro
+	call	0F003H
+	defb	0
+	endm
+	
+;
+; putc test
+	ld	A,'A'
+	ld	B,'Z'+1
+	
+l1	putc
+	inc	A
+	cp	B
+	jr	C,l1
+	
+	ld	A,0AH		; LF
+	putc
+	ld	A,0DH		; CR
+	putc	
+	
+	RET			; return
+
+; end of code	
+EEMAIN EQU $
+
+;
+; fill last 128byte block with 0 
+EELAST EQU ($+127)&0FF80H
+FILL	EQU EELAST-EEMAIN
+	REPT FILL
+	DEFB 0
+	ENDM
+
+	
+	
+
+	
