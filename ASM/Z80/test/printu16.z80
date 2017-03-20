@@ -3,7 +3,18 @@
 CODEBASE	EQU 0200H
 
 	ORG CODEBASE-80H	; 128byte file header before start of code
-	
+
+;
+; KC85 EQUs
+CRT0	EQU 8CH
+CRT1	EQU 8DH
+CRT2	EQU 8EH
+CRT0IR	EQU 01E8H
+CRT1IR	EQU 01EAH
+CRT2IR	EQU 01ECH
+VMEM	EQU 08000H
+VMEMSZ	EQU 02800H
+COLBYTE	EQU 0B7A3H	
 
 ; CAOS file header
 	DEFB "PRINT",0,0,0,0,0,0	; name 11 chars!
@@ -45,11 +56,13 @@ newline	macro
 u16_n	EQU	500
 
 main:
+	call reset_timer
 	ld hl,1234
 	printu16
 	newline
 	
 	ld hl,0
+	di
 l1:	inc hl
 	push hl
 	printu16
@@ -62,6 +75,10 @@ l1:	inc hl
 	ld a,l
 	cp u16_n&0FFH
 	jr c,l1
+	ei
+	newline
+	ld hl,(timer)
+	printu16
 	newline
 	RET			; return
 	
@@ -132,12 +149,44 @@ cvtLowerNibble:
 	putc
 	RET	
 
+;
+; RESET TIMER
+reset_timer:
+	LD A,3
+	DI
+	OUT (CRT2),A
+	LD HL,0
+	LD (timer),HL
+	LD HL,ISR
+	LD (CRT2IR),HL
+	LD A,0CFH
+	OUT (CRT2),A
+	LD A,1
+	OUT (CRT2),A
+	EI
+	RET
+	
+;
+; ISR
+ISR:	DI
+	EXX
+	LD HL,(timer)
+	INC HL
+	LD (timer),HL
+	EXX
+	EI
+	RETI	
 	
 ; end of code	
 EEMAIN EQU $
 
 ;
-; fill last 128byte block with 0 
+; Variables not initialized
+timer	DS 2
+
+;
+; fill last 128byte block with 0
+	ORG EEMAIN		; reset ORG to end of code 
 EELAST EQU ($+127)&0FF80H
 FILL	EQU EELAST-EEMAIN
 	REPT FILL
