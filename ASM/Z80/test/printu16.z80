@@ -8,10 +8,10 @@ CODEBASE	EQU 0200H
 ; CAOS file header
 	DEFB "PRINT",0,0,0,0,0,0	; name 11 chars!
 	DEFB 5 dup (0)
-	DEFB 2 			;=3 mit SS-ADR
+	DEFB 3 			;=3 mit SS-ADR, 2 ohne
 	DEFW AAMAIN
 	DEFW EEMAIN
-	DEFW 0 			;nur bei SS
+	DEFW main 			;nur bei SS
 	DEFB 105 dup (0)	; fill block
 
 ; start of code
