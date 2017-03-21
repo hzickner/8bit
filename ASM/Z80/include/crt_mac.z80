@@ -1,0 +1,19 @@
+;
+; putc makro
+putc	macro
+	call	0F003H
+	defb	0
+	endm
+	
+printu16 macro
+	call u16_2bcd
+	call printbcd20
+	endm
+
+newline	macro
+	ld	A,0AH		; LF
+	putc
+	ld	A,0DH		; CR
+	putc	
+	endm
+		

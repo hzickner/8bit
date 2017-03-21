@@ -1,0 +1,39 @@
+; printbcd20
+; input: C:DE bcd number to be printed
+printbcd20:
+	ld a,c
+	jr nz,c4
+	ld a,d
+	cp 010h
+	jr nc,c3
+	cp 01h
+	jr nc,c2
+	ld a,e
+	cp 010h
+	jr nc,c1
+	jr c,c0
+	
+c4:	CALL cvtLowerNibble
+	LD A, D
+c3:	CALL cvtUpperNibble
+	LD A, D
+c2:	CALL cvtLowerNibble
+	LD A, E
+c1:	CALL cvtUpperNibble
+	LD A, E
+	JR cvtLowerNibble
+cvtUpperNibble:
+	RRA ; move upper nibble into lower nibble
+	RRA
+	RRA
+	RRA
+c0:	
+cvtLowerNibble:
+	AND A, 0Fh 	; isolate lower nibble
+;	ADD A, 90h 	; old trick
+;	DAA 		; for converting
+;	ADC A, 40h 	; one nibble
+;	DAA 		; to hex ASCII
+	add a,030h
+	putc
+	RET	
