@@ -62,7 +62,7 @@ main:
 	newline
 	
 	ld hl,0
-	di
+
 l1:	inc hl
 	push hl
 	printu16
@@ -75,7 +75,7 @@ l1:	inc hl
 	ld a,l
 	cp u16_n&0FFH
 	jr c,l1
-	ei
+
 	newline
 	ld hl,(timer)
 	printu16
