@@ -1,0 +1,27 @@
+;
+; RESET TIMER
+reset_timer:
+	LD A,3
+	DI
+	OUT (CRT2),A
+	LD HL,0
+	LD (timer),HL
+	LD HL,ISR
+	LD (CRT2IR),HL
+	LD A,0CFH
+	OUT (CRT2),A
+	LD A,1
+	OUT (CRT2),A
+	EI
+	RET
+	
+;
+; ISR
+ISR:	DI
+	EXX
+	LD HL,(timer)
+	INC HL
+	LD (timer),HL
+	EXX
+	EI
+	RETI

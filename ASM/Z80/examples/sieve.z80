@@ -1,0 +1,55 @@
+	CPU Z80
+
+CODEBASE	EQU 0200H
+
+	ORG CODEBASE-80H		; 128byte file header before start of code
+	
+; CAOS file header
+	DEFB "SIEVE",0,0,0,0,0,0	; name 11 chars!
+	DEFB 5 dup (0)
+	DEFB 3 				;=3 mit SS-ADR, 2 ohne
+	DEFW AAMAIN
+	DEFW EEMAIN
+	DEFW main 			;nur bei SS
+	DEFB 105 dup (0)		; fill block
+
+; start of code
+AAMAIN EQU $
+
+; magic command header for CAOS menu
+	DEFW 7F7FH
+	DEFB "SIEVE"
+	DEFB 01
+	
+NN	EQU 20000	
+;
+; main function	
+main:
+	call reset_timer
+	
+	ld hl,NN
+	ld (u16_N),hl
+	
+	ret
+
+	include "..\include\kc85equ.z80"
+	include "..\include\timer.z80"
+	
+; end of code	
+EEMAIN EQU $
+
+;
+; Variables not initialized
+flagbuf	DS NN
+timer	DS 2
+u16_N	DS 2
+
+;
+; fill last 128byte block with 0
+	ORG EEMAIN			; reset ORG to end of code 
+EELAST EQU ($+127)&0FF80H
+FILL	EQU EELAST-EEMAIN
+	REPT FILL
+	DEFB 0
+	ENDM
+			
