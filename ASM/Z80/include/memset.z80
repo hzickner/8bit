@@ -1,0 +1,13 @@
+;
+; memset
+; HL - target address
+; A - fill value
+; BC - size
+memset:
+	LD (HL),A
+	LD D,H
+	LD E,L
+	INC DE
+	DEC BC
+	LDIR			; 21cy/byte
+	RET

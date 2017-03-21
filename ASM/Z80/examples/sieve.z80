@@ -20,7 +20,12 @@ AAMAIN EQU $
 	DEFW 7F7FH
 	DEFB "SIEVE"
 	DEFB 01
-	
+
+;
+; includes for EQUs and macros
+	include "..\include\kc85equ.z80"
+	include "..\include\crt_mac.z80"
+		
 NN	EQU 20000	
 ;
 ; main function	
@@ -29,11 +34,55 @@ main:
 	
 	ld hl,NN
 	ld (u16_N),hl
+
+	ld hl,flagbuf
+	ld bc,(u16_n)
+	xor a
+	call memset
+	
+	ld hl,(timer)
+	ld (u16_tm1),hl
+	
+	ld hl,flagbuf
+	ld (hl),a		; flags[0]=1
+	
+	dec hl			; PTR2=flagbuf-1
+	
+	ld de,02
+	ld (u16_i),de		; i=2
+	ld e,a
+	ld (u16_k),de		; k=0
+	
+while1
+
+while1out	
+	
+	;
+	; print timings
+	ld hl,(u16_N)
+	printu16
+	ld hl,STR3
+	call putstring
+	ld hl,(u16_tm1)
+	printu16
+	ld hl,STR2
+	call putstring
+	
 	
 	ret
+;
+; end of main
 
-	include "..\include\kc85equ.z80"
 	include "..\include\timer.z80"
+	include "..\include\memset.z80"
+	include "..\include\putstring.z80"
+	include "..\include\u16_2bcd.z80"
+	include "..\include\printbcd20.z80"
+	
+;
+; constants
+STR2	DB " TICKS",CR,LF,0
+STR3	DB " BYTES CLEARED IN",CR,LF,0
 	
 ; end of code	
 EEMAIN EQU $
@@ -43,6 +92,8 @@ EEMAIN EQU $
 flagbuf	DS NN
 timer	DS 2
 u16_N	DS 2
+u16_i	DS 2
+u16_tm1 DS 2
 
 ;
 ; fill last 128byte block with 0

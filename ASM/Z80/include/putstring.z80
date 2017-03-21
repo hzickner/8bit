@@ -1,0 +1,11 @@
+;
+; putstring
+; HL - address of string
+;
+putstring:
+l1:	ld a,(hl)
+	or a
+	ret z
+	putc
+	inc hl
+	jp l1
