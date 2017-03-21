@@ -1,0 +1,204 @@
+	CPU Z80
+
+CODEBASE	EQU 0200H
+
+	ORG CODEBASE-80H		; 128byte file header before start of code
+	
+; CAOS file header
+	DEFB "MEMSET",0,0,0,0,0		; name 11 chars!
+	DEFB 5 dup (0)
+	DEFB 3 				;=3 mit SS-ADR, 2 ohne
+	DEFW AAMAIN
+	DEFW EEMAIN
+	DEFW main 			;nur bei SS
+	DEFB 105 dup (0)		; fill block
+
+; start of code
+AAMAIN EQU $
+
+; magic command header for CAOS menu
+	DEFW 7F7FH
+	DEFB "MEMSET"
+	DEFB 01
+
+;
+; includes for EQUs and macros
+	include "..\include\kc85equ.z80"
+	include "..\include\crt_mac.z80"
+		
+NN	EQU 20000	
+;
+; main function	
+main:
+	call reset_timer
+	
+	ld hl,NN
+	ld (u16_N),hl
+	
+	ld hl,flagbuf
+	ld bc,(u16_N)
+	ld a,1
+	call memset
+	printu16
+	ld a,' '
+	putc
+	
+	ld hl,(timer)
+	ld (u16_tm1),hl
+	printu16
+	newline
+
+	ld hl,flagbuf
+	ld bc,(u16_N)
+	ld a,2
+	call memset2
+	printu16
+	ld a,' '
+	putc
+		
+	ld hl,(timer)
+	ld (u16_tm2),hl
+	ld de,(u16_tm1)
+	or a			; clear carry
+	sbc hl,de
+	printu16
+	newline	
+
+	ld hl,flagbuf
+	ld bc,(u16_N)
+	ld a,3
+	call memset3
+	printu16
+	ld a,' '
+	putc
+		
+	ld hl,(timer)
+	ld (u16_tm3),hl
+	ld de,(u16_tm2)
+	or a			; clear carry
+	sbc hl,de
+	printu16
+	newline
+
+	ld hl,flagbuf
+	ld bc,(u16_N)
+	ld a,4
+	call memset4
+	printu16
+	ld a,' '
+	putc
+		
+	ld hl,(timer)
+	ld de,(u16_tm3)
+	or a			; clear carry
+	sbc hl,de
+	printu16
+	newline
+					
+	ret
+
+;
+; includes for code
+	include "..\include\timer.z80"
+	include "..\include\u16_2bcd.z80"
+	include "..\include\printbcd20.z80"
+
+;
+; memset
+; HL - target address
+; A - fill value
+; BC - size
+memset:
+	LD (HL),A
+	LD D,H
+	LD E,L
+	INC DE
+	DEC BC
+	LDIR			; 21cy/byte
+	RET
+	
+	message "memset: \{$-memset} bytes"
+	
+;
+; MEMSET
+memset2:
+	LD D,A
+	XOR A
+MEMS_0	LD (HL),D		; 7
+	INC HL			; 6
+	DEC BC			; 6
+	CP C			; 4
+	JP NZ,MEMS_0		; 10	33cy/byte
+	CP B			; 4
+	JP NZ,MEMS_0		; 10
+	RET	
+	
+	message "memset2: \{$-memset2} bytes"
+
+;
+; MEMSET
+memset3:
+	LD D,B
+	LD E,C
+	LD B,E
+	DEC DE
+	INC D
+MEMS_3	LD (HL),A		; 7
+	INC HL			; 6
+	DJNZ MEMS_3		; 13	26cy/byte
+	DEC D
+	JR NZ,MEMS_3
+
+	RET	
+	
+	message "memset3: \{$-memset3} bytes"
+	
+;
+; MEMSET4
+memset4:
+	srl b
+	rr c
+	jr nc,skip
+	ld (hl),a
+	inc hl
+skip
+	ld d,b
+	ld e,c
+	LD B,C
+	DEC DE
+	INC D	
+	
+l1	ld (hl),a		; 7
+	inc hl			; 6
+	ld (hl),a		; 7
+	inc hl			; 6
+	djnz l1			; 13	19.5cy/byte
+	dec d
+	jr nz,l1
+	
+	RET	
+	
+	message "memset4: \{$-memset4} bytes"
+		
+				
+; end of code	
+EEMAIN EQU $
+
+;
+; Variables not initialized
+flagbuf	DS NN
+timer	DS 2
+u16_N	DS 2
+u16_tm1 DS 2
+u16_tm2 DS 2
+u16_tm3 DS 2
+
+;
+; fill last 128byte block with 0
+	ORG EEMAIN			; reset ORG to end of code 
+EELAST EQU ($+127)&0FF80H
+FILL	EQU EELAST-EEMAIN
+	REPT FILL
+	DEFB 0
+	ENDM
+			
