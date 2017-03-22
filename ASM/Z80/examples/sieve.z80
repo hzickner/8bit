@@ -1,5 +1,9 @@
 ; 03/22/2017	599 bytes
 ; 20000		11	435	455	901
+; 03/22/2017	593 bytes
+; 20000		11	381	455	847	partial register optimisation
+; 03/22/2017	591 bytes
+; 20000		11	375	454	840	jp/jr optimization
 
 	CPU Z80
 
@@ -63,22 +67,24 @@ while1
 	sub e
 	ld a,(u16_n+1)
 	sbc a,d
-	jp c,while1out		; while (i <= n)
+	jr c,while1out		; while (i <= n)
 	
 	ld hl,(ptr2)
 	ld a,(hl)
 	or a
-	jr nz,else1		; if !flag[i]
+	jp nz,else1		; if !flag[i] ; jp faster here
 	
 	ld hl,(u16_count)
 	inc hl
 	ld (u16_count),hl	; count++
 	
 	ld hl,(u16_i)
+	ld b,h
+	ld c,l			; use bc for i
 	add hl,hl
 	ld (u16_k),hl		; k = i+i
 	
-	ld hl,(ptr2)
+	ld hl ,(ptr2)
 	ld (ptr3),hl		; ptr3=ptr2
 while2	
 	ld a,(u16_n)
@@ -86,11 +92,10 @@ while2
 	sub e
 	ld a,(u16_n+1)
 	sbc a,d
-	jp c,while2out
+	jr c,while2out		; while (k <= n) ; jr is faster here
 	
 	ld hl,(ptr3)
-	ld de,(u16_i)
-	add hl,de
+	add hl,bc
 	ld (ptr3),hl		; ptr3=ptr3+i
 	
 	ld a,1
@@ -98,8 +103,7 @@ while2
 	ld (hl),a
 	
 	ld hl,(u16_k)
-	ld de,(u16_i)
-	add hl,de
+	add hl,bc
 	ld (u16_k),hl		; k=k+i
 	jp while2
 while2out
@@ -142,12 +146,12 @@ while3
 	sub e
 	ld a,(u16_n2+1)
 	sbc a,d
-	jp c,while3out		; while (i <= n2)
+	jr c,while3out		; while (i <= n2)
 	
 	ld hl,(ptr2)
 	ld a,(hl)
 	or a
-	jp nz,else3
+	jp nz,else3		; jp expected faster
 	
 	ld hl,(u16_count2)
 	inc hl
