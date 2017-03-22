@@ -46,19 +46,140 @@ main:
 	ld hl,flagbuf
 	ld (hl),a		; flags[0]=1
 	
-	dec hl			; PTR2=flagbuf-1
+	inc hl			; PTR2=flagbuf+1
+	ld (ptr2),hl
 	
 	ld de,02
 	ld (u16_i),de		; i=2
 	ld e,a
-	ld (u16_k),de		; k=0
+	ld (u16_count),de	; count=0
 	
 while1
-
-while1out	
+	ld a,(u16_n)
+	ld de,(u16_i)
+	sub e
+	ld a,(u16_n+1)
+	sbc a,d
+	jp c,while1out		; while (i <= n)
 	
-	;
-	; print timings
+	ld hl,(ptr2)
+	ld a,(hl)
+	or a
+	jr nz,else1		; if !flag[i]
+	
+	ld hl,(u16_count)
+	inc hl
+	ld (u16_count),hl	; count++
+	
+	ld hl,(u16_i)
+	add hl,hl
+	ld (u16_k),hl		; k = i+i
+	
+	ld hl,(ptr2)
+	ld (ptr3),hl		; ptr3=ptr2
+while2	
+	ld a,(u16_n)
+	ld de,(u16_k)
+	sub e
+	ld a,(u16_n+1)
+	sbc a,d
+	jp c,while2out
+	
+	ld hl,(ptr3)
+	ld de,(u16_i)
+	add hl,de
+	ld (ptr3),hl		; ptr3=ptr3+i
+	
+	ld a,1
+	ld hl,(ptr3)
+	ld (hl),a
+	
+	ld hl,(u16_k)
+	ld de,(u16_i)
+	add hl,de
+	ld (u16_k),hl		; k=k+i
+	jp while2
+while2out
+else1	
+	ld hl,(u16_i)
+	inc hl
+	ld (u16_i),hl		; i++
+	ld hl,(ptr2)
+	inc hl
+	ld (ptr2),hl		; ptr2++
+	
+	jp while1
+while1out	
+
+	ld hl,(timer)
+	ld (u16_tm2),hl
+
+;
+; print primes <N2
+	ld hl,flagbuf
+	inc hl			; PTR2=flagbuf+1
+	ld (ptr2),hl
+	
+	ld hl,(u16_N)
+	srl h
+	rr l
+	srl h
+	rr l
+	srl h
+	rr l
+	ld (u16_N2),hl		; N2 = N >> 3
+	
+	ld hl,0
+	ld (u16_count2),hl
+	ld l,2
+	ld (u16_i),hl		; i=0; count2=2
+while3
+	ld a,(u16_n2)
+	ld de,(u16_i)
+	sub e
+	ld a,(u16_n2+1)
+	sbc a,d
+	jp c,while3out		; while (i <= n2)
+	
+	ld hl,(ptr2)
+	ld a,(hl)
+	or a
+	jp nz,else3
+	
+	ld hl,(u16_count2)
+	inc hl
+	ld (u16_count2),hl	; count2++
+	ld hl,(u16_i)
+	printu16
+	ld a,' '
+	putc			; print i
+
+else3	
+	ld hl,(u16_i)
+	inc hl
+	ld (u16_i),hl		; i++
+	ld hl,(ptr2)
+	inc hl
+	ld (ptr2),hl		; ptr2++
+	jp while3
+while3out
+	newline	
+
+	ld hl,(timer)
+	ld (u16_tm4),hl
+	
+	ld de,(u16_tm2)
+	or a
+	sbc hl,de
+	ld (u16_tm3),hl		; tm3 = tm4-tm2
+	ld hl,(u16_tm2)
+	ld de,(u16_tm1)
+	or a
+	sbc hl,de
+	ld (u16_tm2),hl		; tm2 = tm2-tm1
+				
+;
+; print timings
 	ld hl,(u16_N)
 	printu16
 	ld hl,STR3
@@ -66,9 +187,31 @@ while1out
 	ld hl,(u16_tm1)
 	printu16
 	ld hl,STR2
+	call putstring		; memset time
+	
+	ld hl,(u16_count)
+	printu16
+	ld hl,STR1
 	call putstring
+	ld hl,(u16_tm2)
+	printu16
+	ld hl,STR2
+	call putstring		; calc time	
+
+	ld hl,(u16_count2)
+	printu16
+	ld hl,STR1
+	call putstring
+	ld hl,(u16_tm3)
+	printu16
+	ld hl,STR2
+	call putstring		; print time
 	
-	
+	ld hl,(u16_tm4)
+	printu16
+	ld hl,STR4
+	call putstring
+		
 	ret
 ;
 ; end of main
@@ -81,19 +224,30 @@ while1out
 	
 ;
 ; constants
+STR1	DB " PRIMES IN",CR,LF,0
 STR2	DB " TICKS",CR,LF,0
 STR3	DB " BYTES CLEARED IN",CR,LF,0
+STR4	DB " TICKS TOTAL",CR,LF,0
 	
 ; end of code	
 EEMAIN EQU $
 
 ;
 ; Variables not initialized
-flagbuf	DS NN
-timer	DS 2
-u16_N	DS 2
-u16_i	DS 2
-u16_tm1 DS 2
+flagbuf		DS NN
+ptr2		DS 2
+ptr3		DS 2	
+timer		DS 2
+u16_N		DS 2
+u16_N2		DS 2
+u16_i		DS 2
+u16_k		DS 2
+u16_count	DS 2
+u16_count2	DS 2
+u16_tm1 	DS 2
+u16_tm2 	DS 2
+u16_tm3 	DS 2
+u16_tm4 	DS 2
 
 ;
 ; fill last 128byte block with 0
