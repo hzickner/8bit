@@ -44,7 +44,7 @@ main:
 	ld (u16_tm1),hl
 	
 	ld hl,flagbuf
-	ld (hl),a		; flags[0]=1
+	ld (hl),1		; flags[0]=1
 	
 	inc hl			; PTR2=flagbuf+1
 	ld (ptr2),hl
@@ -257,4 +257,7 @@ FILL	EQU EELAST-EEMAIN
 	REPT FILL
 	DEFB 0
 	ENDM
+	
+	outradix 10
+	message "Codesize: \{EEMAIN-AAMAIN}"
 			
