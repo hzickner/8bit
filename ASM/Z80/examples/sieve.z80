@@ -12,6 +12,8 @@
 ; 20000		11	221	455	687	register optimization
 ; 03/23/2017	555 bytes
 ; 20000		11	219	456	686	register optimization
+; 03/23/2017	542 bytes
+; 20000		11	193	455	659	register optimization
 
 	CPU Z80
 
@@ -61,8 +63,7 @@ main:
 	ld hl,flagbuf
 	ld (hl),1		; flags[0]=1
 	
-	inc hl			; PTR2=flagbuf+1
-	ld (ptr2),hl
+	inc hl			; PTR2=flagbuf+1 ; hl for ptr2
 	
 	ld bc,02		; use bc for i
 	ld iy,0			; count=0; use iy for count
@@ -74,7 +75,6 @@ while1
 	sbc a,b
 	jr c,while1out		; while (i <= n)
 	
-	ld hl,(ptr2)
 	ld a,(hl)
 	or a
 	jp nz,else1		; if !flag[i] ; jp faster here
@@ -88,7 +88,7 @@ while1
 	adc a,b
 	ld d,a			; k = i+i ; use de for k
 	
-	ld hl ,(ptr2)		; use hl for ptr3
+	push hl			; save ptr2 ; use hl for ptr3 in while2 loop
 while2	
 	ld a,(u16_n)
 	sub e
@@ -120,11 +120,10 @@ while2
 	
 	jp while2
 while2out
+	pop hl			; restore ptr2
 else1	
 	inc bc			; i++
-	ld hl,(ptr2)
-	inc hl
-	ld (ptr2),hl		; ptr2++
+	inc hl			; ptr2++
 	
 	jp while1
 while1out	
