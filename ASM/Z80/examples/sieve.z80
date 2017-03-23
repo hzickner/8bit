@@ -8,6 +8,8 @@
 ; 20000		11	344	455	810	register optimization
 ; 03/23/2017	569 bytes
 ; 20000		11	288	455	754	register optimization
+; 03/23/2017	557 bytes
+; 20000		11	221	455	687	register optimization
 
 	CPU Z80
 
@@ -87,8 +89,7 @@ while1
 	ld d,h			; k = i+i ; use de for k
 	ld e,l
 	
-	ld hl ,(ptr2)
-	ld (ptr3),hl		; ptr3=ptr2
+	ld hl ,(ptr2)		; use hl for ptr3
 while2	
 	ld a,(u16_n)
 	sub e
@@ -96,12 +97,9 @@ while2
 	sbc a,d
 	jr c,while2out		; while (k <= n) ; jr is faster here
 	
-	ld hl,(ptr3)
-	add hl,bc
-	ld (ptr3),hl		; ptr3=ptr3+i
+	add hl,bc		; ptr3=ptr3+i
 	
 	ld a,1
-	ld hl,(ptr3)
 	ld (hl),a
 	
 	;ld hl,(u16_k)		;16
@@ -257,7 +255,6 @@ EEMAIN EQU $
 ; Variables not initialized
 flagbuf		DS NN
 ptr2		DS 2
-ptr3		DS 2	
 timer		DS 2
 u16_N		DS 2
 u16_N2		DS 2
