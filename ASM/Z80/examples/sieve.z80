@@ -10,6 +10,8 @@
 ; 20000		11	288	455	754	register optimization
 ; 03/23/2017	557 bytes
 ; 20000		11	221	455	687	register optimization
+; 03/23/2017	555 bytes
+; 20000		11	219	456	686	register optimization
 
 	CPU Z80
 
@@ -63,9 +65,7 @@ main:
 	ld (ptr2),hl
 	
 	ld bc,02		; use bc for i
-	ld e,a
-	ld d,a
-	ld (u16_count),de	; count=0
+	ld iy,0			; count=0; use iy for count
 	
 while1
 	ld a,(u16_n)
@@ -79,15 +79,14 @@ while1
 	or a
 	jp nz,else1		; if !flag[i] ; jp faster here
 	
-	ld hl,(u16_count)
-	inc hl
-	ld (u16_count),hl	; count++
+	inc iy
 	
-	ld h,b
-	ld l,c			; use bc for i
-	add hl,hl
-	ld d,h			; k = i+i ; use de for k
-	ld e,l
+	ld a,c			; use bc for i
+	add a,c
+	ld e,a
+	ld a,b
+	adc a,b
+	ld d,a			; k = i+i ; use de for k
 	
 	ld hl ,(ptr2)		; use hl for ptr3
 while2	
@@ -129,7 +128,8 @@ else1
 	
 	jp while1
 while1out	
-
+	ld (u16_count),iy	; store count
+	
 	ld hl,(timer)
 	ld (u16_tm2),hl
 
