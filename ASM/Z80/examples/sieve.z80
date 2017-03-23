@@ -4,6 +4,8 @@
 ; 20000		11	381	455	847	partial register optimisation
 ; 03/22/2017	591 bytes
 ; 20000		11	375	454	840	jp/jr optimization
+; 03/23/2017	575 bytes
+; 20000		11	344	455	810	register optimization
 
 	CPU Z80
 
@@ -56,17 +58,16 @@ main:
 	inc hl			; PTR2=flagbuf+1
 	ld (ptr2),hl
 	
-	ld de,02
-	ld (u16_i),de		; i=2
+	ld bc,02		; use bc for i
 	ld e,a
+	ld d,a
 	ld (u16_count),de	; count=0
 	
 while1
 	ld a,(u16_n)
-	ld de,(u16_i)
-	sub e
+	sub c
 	ld a,(u16_n+1)
-	sbc a,d
+	sbc a,b
 	jr c,while1out		; while (i <= n)
 	
 	ld hl,(ptr2)
@@ -78,9 +79,8 @@ while1
 	inc hl
 	ld (u16_count),hl	; count++
 	
-	ld hl,(u16_i)
-	ld b,h
-	ld c,l			; use bc for i
+	ld h,b
+	ld l,c			; use bc for i
 	add hl,hl
 	ld (u16_k),hl		; k = i+i
 	
@@ -108,9 +108,7 @@ while2
 	jp while2
 while2out
 else1	
-	ld hl,(u16_i)
-	inc hl
-	ld (u16_i),hl		; i++
+	inc bc			; i++
 	ld hl,(ptr2)
 	inc hl
 	ld (ptr2),hl		; ptr2++
