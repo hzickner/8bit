@@ -3,15 +3,15 @@
 reset_timer:
 	LD A,3
 	DI
-	OUT (CRT2),A
+	OUT (CRT2),A		; 00000011 control word, software reset, no time constant, interrupt disable
 	LD HL,0
 	LD (timer),HL
 	LD HL,ISR
 	LD (CRT2IR),HL
 	LD A,0CFH
-	OUT (CRT2),A
+	OUT (CRT2),A		; 11001111 control word, software reset, time constant follows, clk starts, counter mode, interrupt enable 
 	LD A,1
-	OUT (CRT2),A
+	OUT (CRT2),A		; time constant 1
 	EI
 	RET
 	
