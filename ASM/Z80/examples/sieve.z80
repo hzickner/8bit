@@ -14,6 +14,8 @@
 ; 20000		11	219	456	686	register optimization
 ; 03/23/2017	542 bytes
 ; 20000		11	193	455	659	register optimization
+; 03/23/2017	542 bytes
+; 20000		11	192	210	413	start printing at 0,0 less scrolling
 
 	CPU Z80
 
@@ -47,6 +49,7 @@ NN	EQU 20000
 ;
 ; main function	
 main:
+	home
 	call reset_timer
 	
 	ld hl,NN
@@ -79,7 +82,7 @@ while1
 	or a
 	jp nz,else1		; if !flag[i] ; jp faster here
 	
-	inc iy
+	inc iy			; count++
 	
 	ld a,c			; use bc for i
 	add a,c

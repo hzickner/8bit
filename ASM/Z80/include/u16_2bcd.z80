@@ -2,9 +2,11 @@
 ; u16_2bcd
 ; input: HL = unsigned integer to convert
 ; output: C:DE = 6-digit BCD number
+; changes A,B,C,D,E,H,L
 u16_2bcd: 
 	LD BC, 16*256+0 	; 10 	handle 16 bits, one bit per iteration; b=16 c=0
-	LD DE, 0		; 10
+	LD D,C			; 4
+	LD E,C			; 4
 
 cvtLoop:
 	ADD HL, HL		; 11 

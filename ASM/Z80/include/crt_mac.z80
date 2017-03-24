@@ -1,19 +1,34 @@
 ;
 ; putc makro
+; A - char to print
 putc	macro
 	call	0F003H
 	defb	0
 	endm
-	
+
+;
+; print 16bit unsigned integer
+; HL - 16bit value
+; changes A,B,C,D,E,H,L
 printu16 macro
 	call u16_2bcd
 	call printbcd20
 	endm
 
+;
+; print newline (CRLF)
 newline	macro
 	ld	A,0AH		; LF
 	putc
 	ld	A,0DH		; CR
 	putc	
 	endm
+
+;
+; cursor position to home
+; changes H,L
+home	macro
+	ld hl,0
+	ld (CURSO),hl
+	endm	
 		
