@@ -246,8 +246,8 @@ MOLN2	LDI		;zeichenweise
 	EX	AF,AF'
 	JR	POPS4
  
-PCHR	;CRT-Grundprogramm
-	LD	DE,(CURSO)
+PCHR	;CRT-Grundprogramm		;print char
+	LD	DE,(CURSO)		;DE=Cursorposition
 	LD	HL,STBT
 	BIT	4,(HL)	;ESC aktiv?
 	JR	Z,PCHR3
@@ -553,16 +553,16 @@ ESC	LD	HL,STBT	;ShSTOP
 	SET	4,(HL)
 	RET
  
-CRT	PUSH	HL		;**00**
+CRT	PUSH	HL		; CAOS UP Nr **00**
 	PUSH	DE
 	PUSH	BC
-	PUSH	AF
-	CALL	PCHR
-	LD	(CURSO),DE
+	PUSH	AF		; save REGS
+	CALL	PCHR		; print char
+	LD	(CURSO),DE	; setze CURSOR
 	POP	AF
 	POP	BC
 	POP	DE
-	POP	HL
+	POP	HL		; restore REGS
 	RET
  
 ;KBD-Treiber
