@@ -1,0 +1,122 @@
+	CPU Z80
+
+;*********************************
+;**				**
+;**	CAOS 4.2 reassembliert	**
+;**	von haftmann#software	**
+;**	03.12.91 bis 27.03.92	**
+;**				**
+;**	ergänzt: ML-Soft	**
+;**		 13.04.94	**
+;*********************************
+ 
+;**	Speicher}bersicht	**
+ 
+;C000	MODUL, SYSTEM
+;C0F7	KEYL, SQR, MULT, WININ, COLOR
+;C17C	LINE, PUDE
+;C223	DISPLAY, MODIFY
+;C2D5	V24OUT
+;C3CF	ShCLR-Reaktionsprogramm
+;C425	Hardcopyroutinen
+;C64F	V24DUP und UMINIT
+;C70E	GARG, MBIN, MBOUT
+;C8A4	frei *)
+;------------------------------------
+;E000	RESET und BASIC-Verteiler
+;E040	CRT-Treiber mit PADR
+;E339	KBD-Treiber mit BRKT
+;E3E8	SWITCH, JUMP
+;E4B4	TAPE-Treiber
+;E64F	BASIC-Extension
+;EDDB	ESC-Tabelle
+;EDF1	frei *)
+;EE00	Zeichenbildtab. Großbuchst. *)
+;------------------------------------
+;F000	PWRON und Programmverteiler
+;F12A	Kommandointerpreter (MENU)
+;F238	KBD, IRM-Default, INLIN
+;F354	Hexzahlen-Verarbeitung
+;F3D0	Systeminit, SIXD, Portinittab.
+;F488	SAVE, VERIFY, LOAD
+;F619	COLOR, CSTBT, DISPLAY, MODIFY,
+;	WINDOW-Routinen, KEY, KEYLIST
+;F74A	CUCP, Grafikroutinen, CIRCLE
+;F86B	MBOUT,MBIN, MODUL, SYSTEM
+;F8A7	BASIC-I/O-Verteiler
+;F91C	ZKOUT, TON, ESC-Progr{mmchen
+;F9C6	V24OUT, V24DUP, ISR SIO
+;FB61	ROMC-Schalter, MULT, SQR
+;FB92	ESC/P->IBM-Codewandeltabelle
+;FBA0	I/O-UP-Nummer-Tabelle
+;FBA8	Unterprogrammtab. für SUTAB
+;FC3A	Tastaturtabelle KTAB
+;FCBA	Interruptvektortabelle
+;FCC8	Steuerfunktionstabelle für CTAB
+;FD08	BASIC-Token
+;FD2B	Sprungtabelle f. BASIC-Token
+;FDF0	frei *)
+;FDF8	Bittabelle für Punktroutinen
+;FE00	Zeichenbildtab. Kleinbuchst. *)
+;------------------------------------
+;*) nicht in diesem Listing aufgeführt
+
+;**	EQU-Liste		**
+ 
+ 
+ARGC	EQU	0B780H
+ARGN	EQU	0B781H
+ARG1	EQU	0B782H
+ARG2	EQU	0B784H
+ARG3	EQU	0B786H
+ARG49	EQU	0B788H
+ARG10	EQU	0B794H
+NUMNX	EQU	0B796H
+NUMVX	EQU	0B797H
+HCADR	EQU	0B799H
+WINNR	EQU	0B79BH
+WINON	EQU	0B79CH
+WINLG	EQU	0B79EH
+CURSO	EQU	0B7A0H
+STBT	EQU	0B7A2H
+COLOR	EQU	0B7A3H
+WEND	EQU	0B7A4H
+CCTL0	EQU	0B7A6H
+SYSP	EQU	0B7AEH
+SUTAB	EQU	0B7B0H
+CTAB	EQU	0B7B2H
+BJUMP	EQU	0B7B4H
+OUTAB	EQU	0B7B9H
+INTAB	EQU	0B7BBH
+UOUT1	EQU	0B7BDH
+UIN1	EQU	0B7C0H
+UOUT2	EQU	0B7C3H
+UIN2	EQU	0B7C6H
+IOERR	EQU	0B7C9H
+VRAM	EQU	0B7CBH
+ZOTAB	EQU	0B7CDH
+ZWEND	EQU	0B7CFH
+FTAST	EQU	0B7D1H
+HOR	EQU	0B7D3H
+VERT	EQU	0B7D5H
+FARB	EQU	0B7D6H
+MIXIT	EQU	0B7D7H
+VORTN	EQU	0B7D8H
+DTADR	EQU	0B7DAH
+DTNR	EQU	0B7DCH
+L3TAB	EQU	0B7DDH
+L3SIZ	EQU	0B7DFH
+COUNT	EQU	0B7E0H
+HCPZ	EQU	0B7E1H
+INTV1	EQU	0B7E2H
+INTV1L	EQU	0B7E4H
+INTV2	EQU	0B7E5H
+INTV2L	EQU	0B7E7H
+HCPZ2	EQU	0B7E8H
+WNDFN	EQU	0B99CH
+;--------------------------------
+
+	include "CC42.z80"
+	include "CE42.z80"	
+	include "CF42.z80"
+		
