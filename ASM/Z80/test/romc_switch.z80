@@ -1,0 +1,66 @@
+	CPU Z80
+
+CODEBASE	EQU 0200H
+
+	ORG CODEBASE-80H		; 128byte file header before start of code
+	
+; CAOS file header
+	DEFB "ROMC",0,0,0,0,0,0,0		; name 11 chars!
+	DEFB 5 dup (0)
+	DEFB 2 				;=3 mit SS-ADR, 2 ohne
+	DEFW AAMAIN
+	DEFW EEMAIN
+	DEFW 0				;nur bei SS
+	DEFB 105 dup (0)		; fill block
+
+; start of code
+AAMAIN EQU $
+
+; magic command header for CAOS menu
+	DEFW 7F7FH
+	DEFB "CON"
+	DEFB 01
+
+;
+; includes for EQUs and macros
+	include "..\include\kc85equ.z80"
+	include "..\include\crt_mac.z80"
+		
+NN	EQU 20000	
+;
+; main function	
+main_con:
+	SET	7,(IX+4)
+	LD	A,(IX+4)
+	OUT	86H,A
+	RET
+
+; magic command header for CAOS menu
+	DEFW 7F7FH
+	DEFB "COFF"
+	DEFB 01
+
+main_coff:
+	RES	7,(IX+4)
+	LD	A,(IX+4)
+	OUT	86H,A
+	RET	
+		
+;
+; includes for code
+
+; end of code	
+EEMAIN EQU $
+
+;
+; Variables not initialized
+
+;
+; fill last 128byte block with 0
+	ORG EEMAIN			; reset ORG to end of code 
+EELAST EQU ($+127)&0FF80H
+FILL	EQU EELAST-EEMAIN
+	REPT FILL
+	DEFB 0
+	ENDM
+			
