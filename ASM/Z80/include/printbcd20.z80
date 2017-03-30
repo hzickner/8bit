@@ -1,6 +1,8 @@
 ; printbcd20
 ; input: C:DE bcd number to be printed
 printbcd20:
+	ld b,0FH	; mask for lower nibble
+	
 	ld a,c
 	jr nz,c4
 	ld a,d
@@ -13,27 +15,32 @@ printbcd20:
 	jr nc,c1
 	jr c,c0
 	
-c4:	CALL cvtLowerNibble
-	LD A, D
-c3:	CALL cvtUpperNibble
-	LD A, D
-c2:	CALL cvtLowerNibble
-	LD A, E
-c1:	CALL cvtUpperNibble
-	LD A, E
-	JR cvtLowerNibble
-cvtUpperNibble:
-	RRA ; move upper nibble into lower nibble
-	RRA
-	RRA
-	RRA
-c0:	
-cvtLowerNibble:
-	AND A, 0Fh 	; isolate lower nibble
-;	ADD A, 90h 	; old trick
-;	DAA 		; for converting
-;	ADC A, 40h 	; one nibble
-;	DAA 		; to hex ASCII
+c4:	AND A, B 	; isolate lower nibble
 	add a,030h
 	putc
-	RET	
+	LD A, D
+c3:	RRA 		; move upper nibble into lower nibble
+	RRA
+	RRA
+	RRA
+	AND A, B 	; isolate lower nibble
+	add a,030h
+	putc
+	LD A, D
+c2:	AND A, B 	; isolate lower nibble
+	add a,030h
+	putc
+	LD A, E
+c1:	RRA 		; move upper nibble into lower nibble
+	RRA
+	RRA
+	RRA
+	AND A, B 	; isolate lower nibble
+	add a,030h
+	putc
+	LD A, E
+c0:	AND A, B 	; isolate lower nibble
+	add a,030h
+	putc
+	
+	ret

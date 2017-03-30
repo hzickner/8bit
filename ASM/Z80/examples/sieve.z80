@@ -18,6 +18,8 @@
 ; 20000		11	192	210	413	start printing at 0,0 less scrolling
 ; 03/30/2017	540 bytes
 ; 20000		11	192	208	411	register optimization in print loop
+; 03/30/2017	569 bytes
+; 20000		11	192	205	408	optimized printbcd20 and u16_2bcd
 
 	CPU Z80
 

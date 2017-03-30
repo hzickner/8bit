@@ -3,14 +3,27 @@
 ; input: HL = unsigned integer to convert
 ; output: C:DE = 6-digit BCD number
 ; changes A,B,C,D,E,H,L
-u16_2bcd: 
+u16_2bcd:
+
+	SECTION u16_2bcd
+	 
 	LD BC, 16*256+0 	; 10 	handle 16 bits, one bit per iteration; b=16 c=0
 	LD D,C			; 4
 	LD E,C			; 4
+	
+	ld a,h
+	or l
+	ret z			; return for input 0
 
+shift:
+	ADD HL,HL
+	jr c,l1
+	dec b
+	jp shift		; shift left until carry
+	
 cvtLoop:
 	ADD HL, HL		; 11 
-	LD A, E			; 4
+l1:	LD A, E			; 4
 	ADC A, A		; 4
 	DAA			; 4
 	LD E, A			; 4
@@ -26,3 +39,5 @@ cvtLoop:
 	
 
 	RET			; 10
+	
+	ENDSECTION u16_2bcd
