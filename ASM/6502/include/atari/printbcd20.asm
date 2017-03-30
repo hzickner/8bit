@@ -19,8 +19,7 @@ c4:	and #$0F
 	jsr putc
 
 	lda B6
-c3:	and #$F0
-	lsr
+c3:	lsr
 	lsr
 	lsr
 	lsr
@@ -33,8 +32,7 @@ c2:	and #$0F
 	jsr putc
 
 	lda B5
-c1:	and #$F0
-	lsr
+c1:	lsr
 	lsr
 	lsr
 	lsr
