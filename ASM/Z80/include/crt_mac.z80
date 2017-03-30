@@ -16,6 +16,13 @@ printu16 macro
 	endm
 
 ;
+; clear screen (CLS)
+cls	macro
+	ld	A,CLS		; LF
+	putc
+	endm
+	
+;
 ; print newline (CRLF)
 newline	macro
 	ld	A,0AH		; LF

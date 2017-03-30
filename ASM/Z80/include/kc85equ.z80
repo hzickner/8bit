@@ -10,7 +10,9 @@ VMEM	EQU 08000H
 VMEMSZ	EQU 02800H
 
 CURSO	EQU 0B7A0H	; l column, h row
+STBT	EQU 0B7A2H	; Steuerbyte Bilschirm Bit 0: Schreiben Zeichen, Bit 1: Farbe, Bit 3 Steuercodes
 COLBYTE	EQU 0B7A3H
 
 LF	EQU 0AH
+CLS	EQU 0CH
 CR	EQU 0DH
