@@ -16,6 +16,8 @@
 ; 20000		11	193	455	659	register optimization
 ; 03/23/2017	542 bytes
 ; 20000		11	192	210	413	start printing at 0,0 less scrolling
+; 03/30/2017	540 bytes
+; 20000		11	192	208	411	register optimization in print loop
 
 	CPU Z80
 
@@ -49,7 +51,7 @@ NN	EQU 20000
 ;
 ; main function	
 main:
-	home
+	cls
 	call reset_timer
 	
 	ld hl,NN
@@ -137,10 +139,6 @@ while1out
 
 ;
 ; print primes <N2
-	ld hl,flagbuf
-	inc hl			; PTR2=flagbuf+1
-	ld (ptr2),hl
-	
 	ld hl,(u16_N)
 	srl h
 	rr l
@@ -150,40 +148,40 @@ while1out
 	rr l
 	ld (u16_N2),hl		; N2 = N >> 3
 	
-	ld hl,0
-	ld (u16_count2),hl
-	ld l,2
-	ld (u16_i),hl		; i=0; count2=2
+	ld iy,0			; use iy for count2
+	ld bc,2			; use bc for i
+	ld (u16_i),bc		; i=2
+	ld hl,flagbuf
+	inc hl			; PTR2=flagbuf+1
+	ld (ptr2),hl		; use hl for ptr2
 while3
 	ld a,(u16_n2)
-	ld de,(u16_i)
-	sub e
+	sub a,c
 	ld a,(u16_n2+1)
-	sbc a,d
+	sbc a,b
 	jr c,while3out		; while (i <= n2)
 	
-	ld hl,(ptr2)
 	ld a,(hl)
 	or a
 	jp nz,else3		; jp expected faster
 	
-	ld hl,(u16_count2)
-	inc hl
-	ld (u16_count2),hl	; count2++
-	ld hl,(u16_i)
+	inc iy			; count2++
+	ld h,b
+	ld l,c
 	printu16
 	ld a,' '
 	putc			; print i
 
 else3	
-	ld hl,(u16_i)
-	inc hl
-	ld (u16_i),hl		; i++
+	ld bc,(u16_i)
+	inc bc
+	ld (u16_i),bc		; i++
 	ld hl,(ptr2)
 	inc hl
 	ld (ptr2),hl		; ptr2++
 	jp while3
 while3out
+	ld (u16_count2),iy
 	newline	
 
 	ld hl,(timer)
