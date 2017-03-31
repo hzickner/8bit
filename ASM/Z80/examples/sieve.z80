@@ -20,6 +20,8 @@
 ; 20000		11	192	208	411	register optimization in print loop
 ; 03/30/2017	569 bytes
 ; 20000		11	192	205	408	optimized printbcd20 and u16_2bcd
+; 03/31/2017	603 bytes
+; 20000		11	192	203	406	use u16_2bcd16 version up to 4 digits
 
 	CPU Z80
 
@@ -240,6 +242,7 @@ while3out
 	include "..\include\timer.z80"
 	include "..\include\memset.z80"
 	include "..\include\putstring.z80"
+	include "..\include\u16_2bcd16.z80"
 	include "..\include\u16_2bcd.z80"
 	include "..\include\printbcd20.z80"
 	

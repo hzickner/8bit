@@ -1,0 +1,39 @@
+;
+; u16_2bcd16
+; input: HL = unsigned integer to convert
+; output: DE = 4-digit BCD number
+; changes A,B,C,D,E,H,L
+u16_2bcd16:
+
+	SECTION u16_2bcd16
+	 
+	LD B,16
+	LD DE,0
+	
+	ld a,h
+	or l
+	ret z			; return for input 0
+
+	PUBLIC u16_2bcd16_2
+u16_2bcd16_2:	
+shift:
+	ADD HL,HL
+	jr c,l1
+	dec b
+	jp shift		; shift left until carry
+	
+cvtLoop:
+	ADD HL, HL		; 11 
+l1:	LD A, E			; 4
+	ADC A, A		; 4
+	DAA			; 4
+	LD E, A			; 4
+	LD A, D			; 4
+	ADC A, A		; 4
+	DAA			; 4
+	LD D, A			; 4
+	DJNZ cvtLoop		; 13/8 	56cy/iteration
+	
+	RET			; 10
+	
+	ENDSECTION u16_2bcd16

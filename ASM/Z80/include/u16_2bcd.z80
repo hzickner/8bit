@@ -14,6 +14,10 @@ u16_2bcd:
 	ld a,h
 	or l
 	ret z			; return for input 0
+	
+	ld a,h
+	cp 027H
+	jp c,u16_2bcd16_2	; jump to faster 4 digit implementation
 
 shift:
 	ADD HL,HL
@@ -37,7 +41,6 @@ l1:	LD A, E			; 4
 	LD C, A			; 4
 	DJNZ cvtLoop		; 13/8 	72cy/iteration
 	
-
 	RET			; 10
 	
 	ENDSECTION u16_2bcd

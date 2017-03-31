@@ -4,6 +4,7 @@ printbcd20:
 	ld b,0FH	; mask for lower nibble
 	
 	ld a,c
+	or a
 	jr nz,c4
 	ld a,d
 	cp 010h
