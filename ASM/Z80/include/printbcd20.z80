@@ -1,6 +1,9 @@
 ; printbcd20
 ; input: C:DE bcd number to be printed
 printbcd20:
+
+	SECTION printbcd20
+	
 	ld b,0FH	; mask for lower nibble
 	
 	ld a,c
@@ -45,3 +48,5 @@ c0:	AND A, B 	; isolate lower nibble
 	putc
 	
 	ret
+	
+	ENDSECTION printbcd20

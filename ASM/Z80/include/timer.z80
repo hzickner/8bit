@@ -1,6 +1,9 @@
 ;
 ; RESET TIMER
 reset_timer:
+
+	SECTION timer
+	
 	LD A,3
 	DI
 	OUT (CRT2),A		; 00000011 control word, software reset, no time constant, interrupt disable
@@ -25,3 +28,5 @@ ISR:	DI
 	EXX
 	EI
 	RETI
+	
+	ENDSECTION timer
