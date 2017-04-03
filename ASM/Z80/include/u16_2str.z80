@@ -1,0 +1,26 @@
+
+u16_2str:
+
+	SECTION u16_2str
+	
+	ld bc,06		; 10
+	ld iy,strbuf		; 14  need strbuf l>=7
+	add iy,bc		; 15 39
+		
+	ld (iy),0
+	
+l1:	call u16_divmod10
+	add a,'0'
+	dec iy
+	ld (iy),a
+	
+	ld a,h
+	or l
+	jp nz,l1
+	
+	push iy
+	pop hl
+	
+	ret
+	
+	ENDSECTION u16_2str

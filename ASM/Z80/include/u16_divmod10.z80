@@ -1,0 +1,25 @@
+;Inputs:
+;     HL is the numerator
+;     C is the denominator
+;Outputs:
+;     A is the remainder
+;     B is 0
+;     C is not changed
+;     DE is not changed
+;     HL is the quotient
+u16_divmod10:
+
+	SECTION u16_divmod10
+	
+	ld bc,100AH	; b=16 (16bits), c=10 denominator
+	xor a		; a=0
+l1:	add hl,hl
+	rla
+	cp c
+	jr c,skip1
+	inc l
+	sub c
+skip1:	djnz l1
+	ret
+	
+	ENDSECTION u16_divmod10

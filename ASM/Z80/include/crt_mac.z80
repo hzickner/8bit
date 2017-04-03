@@ -14,6 +14,11 @@ printu16 macro
 	call u16_2bcd
 	call printbcd20
 	endm
+	
+printu16_2 macro
+	call u16_2str
+	call putstring
+	endm	
 
 ;
 ; clear screen (CLS)
