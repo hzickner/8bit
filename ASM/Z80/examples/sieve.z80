@@ -22,6 +22,8 @@
 ; 20000		11	192	205	408	optimized printbcd20 and u16_2bcd
 ; 03/31/2017	603 bytes
 ; 20000		11	192	203	406	use u16_2bcd16 version up to 4 digits
+; 04/04/2017	648 bytes
+; 20000		9	192	203	404	unrolled memset
 
 	CPU Z80
 
@@ -240,7 +242,7 @@ while3out
 ; end of main
 
 	include "..\include\timer.z80"
-	include "..\include\memset.z80"
+	include "..\include\memset_smc.z80"
 	include "..\include\putstring.z80"
 	include "..\include\u16_2bcd16.z80"
 	include "..\include\u16_2bcd.z80"

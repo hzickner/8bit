@@ -1,0 +1,48 @@
+;
+; memset
+; HL - target address
+; A - fill value
+; BC - size
+memset:
+	SECTION memset
+	
+	LD (HL),A
+	LD D,H
+	LD E,L
+	INC DE
+	DEC BC
+
+	push af		; save a
+	xor a
+	sub c
+	and 0FH		; a = 15 - (c mod 16)
+	add a,a		; x2
+	
+	ld (jumpOffset),a
+	
+    	pop af		; restore a
+    	jr $  		; self modifying code
+jumpOffset: equ $ - 1
+
+Loop:
+	ldi  		; 16x LDI
+	ldi
+	ldi
+	ldi
+	ldi
+	ldi
+	ldi
+	ldi
+	ldi
+	ldi
+	ldi
+	ldi
+	ldi
+	ldi
+	ldi
+	ldi		; 16
+	jp pe,Loop	; 10 ca. 17cy/byte
+    
+	ret
+	
+	ENDSECTION memset
