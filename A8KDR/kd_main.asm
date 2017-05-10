@@ -6,8 +6,12 @@
 	ICL "include/putc.asm"
 	ICL "include/exit.asm"
 	ICL "include/clrscr.asm"
+	ICL "id_ca.asm"
+	ICL "id_in.asm"
+	ICL "id_mm.asm"
 	ICL "id_sd.asm"
 	ICL "id_us.asm"
+	ICL "id_vw.asm"
 	ICL "kd_demo.asm"
 
 /*
@@ -19,21 +23,14 @@
 =
 ==========================
 */
-/*
-void ShutdownId (void)
-{
-  US_Shutdown ();
-  SD_Shutdown ();
-  IN_Shutdown ();
-  VW_Shutdown ();
-  CA_Shutdown ();
-  MM_Shutdown ();
-}
-*/
+//void ShutdownId (void)
 .proc ShutdownId
-//TODO
 	jsr US_Shutdown
 	jsr SD_Shutdown
+	jsr IN_Shutdown
+	jsr VW_Shutdown
+	jsr CA_Shutdown
+	jsr MM_Shutdown
 	rts
 .endp
 
@@ -76,13 +73,13 @@ qstr	.byte 'Good bye.',0
 =
 ==========================
 */
+
+//void InitGame (void)
+.proc InitGame
+// TODO
+
+	jsr MM_Startup
 /*
-void InitGame (void)
-{
-	int i;
-
-	MM_Startup ();
-
 	if (mminfo.mainmem < 335l*1024)
 	{
 
@@ -91,9 +88,10 @@ void InitGame (void)
 
 		Quit ("not enough memory");
 	}
+*/
 
-	US_TextScreen();
-
+	jsr US_TextScreen
+/*
 	VW_Startup ();
 	RF_Startup ();
 	IN_Startup ();
@@ -135,8 +133,7 @@ void InitGame (void)
 	VW_ClearVideo (BLACK);
 }
 */
-.proc InitGame
-// TODO
+
 	rts
 .endp
 
