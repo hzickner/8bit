@@ -1,6 +1,29 @@
 /*
 =======================
 =
+= VW_Startup
+=
+=======================
+*/
+//void	VW_Startup (void)
+.proc VW_Startup
+//TODO
+/*
+{
+
+	asm	cld;
+
+	EGAWRITEMODE(0);
+
+	cursorvisible = 0;
+}
+*/
+	rts
+.endp
+	
+/*
+=======================
+=
 = VW_Shutdown
 =
 =======================

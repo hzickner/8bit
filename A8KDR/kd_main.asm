@@ -91,8 +91,8 @@ qstr	.byte 'Good bye.',0
 */
 
 	jsr US_TextScreen
-/*
-	VW_Startup ();
+	jsr VW_Startup
+/*	
 	RF_Startup ();
 	IN_Startup ();
 	SD_Startup ();
