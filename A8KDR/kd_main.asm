@@ -6,6 +6,7 @@
 	ICL "include/putc.asm"
 	ICL "include/exit.asm"
 	ICL "include/clrscr.asm"
+	ICL "id_sd.asm"
 	ICL "id_us.asm"
 	ICL "kd_demo.asm"
 
@@ -32,6 +33,7 @@ void ShutdownId (void)
 .proc ShutdownId
 //TODO
 	jsr US_Shutdown
+	jsr SD_Shutdown
 	rts
 .endp
 
