@@ -9,6 +9,7 @@
 	ICL "id_ca.asm"
 	ICL "id_in.asm"
 	ICL "id_mm.asm"
+	ICL "id_rf.asm"
 	ICL "id_sd.asm"
 	ICL "id_us.asm"
 	ICL "id_vw.asm"
@@ -92,8 +93,8 @@ qstr	.byte 'Good bye.',0
 
 	jsr US_TextScreen
 	jsr VW_Startup
+	jsr RF_Startup
 /*	
-	RF_Startup ();
 	IN_Startup ();
 	SD_Startup ();
 	US_Startup ();
