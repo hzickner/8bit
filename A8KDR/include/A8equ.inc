@@ -19,3 +19,8 @@ ICBLL  =   $0348
 ICBLH  =   $0349
 ICAX1  =   $034A
 ICAX2  =   $034B
+
+KBCODE	=	$D209	; bit 2 last key still pressed
+			; bit 3 shift pressed
+SKSTAT 	=	$D20F	; (R) kbcode of last key pressed
+STIMER	=	$D20F	; (W) 
