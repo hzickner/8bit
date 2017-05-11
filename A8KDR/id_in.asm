@@ -82,6 +82,20 @@ Keyboard	.DS	NumCodes
 //char		LastASCII;
 LastASCII	.DS	1
 LastScan	.DS	1
+
+//	Makros
+//#define	IN_ClearKey(code)	{Keyboard[code] = false;\
+//							if (code == LastScan) LastScan = sc_None;}
+; args - X code
+.proc IN_ClearKey
+	lda #0
+	sta Keyboard,X
+	cpx LastScan
+	bne skip
+	lda #sc_None
+	sta LastScan
+skip	rts
+.endp
 		
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -195,11 +209,11 @@ PTR1	equ $80
 			}
 		}
 	}
-
-	IN_ClearKey(LastScan);
-	LastScan = sc_None;
-}
 */
+	ldx LastScan
+	jsr IN_ClearKey
+//	LastScan = sc_None;	already done by ClearKey
+
 	rts
 .endp	
 
@@ -211,16 +225,11 @@ PTR1	equ $80
 //void IN_Ack(void)
 .proc IN_Ack
 //TODO
+	ldx LastScan
+	jsr IN_ClearKey
+//	LastScan = sc_None;	already done by ClearKey
+
 /*
-{
-	word	i;
-
-	IN_ClearKey(LastScan);
-	LastScan = sc_None;
-
-	if (MousePresent)
-		while (INL_GetMouseButtons())
-					;
 	for (i = 0;i < MaxJoys;i++)
 		if (JoysPresent[i])
 			while (IN_GetJoyButtonsDB(i))
