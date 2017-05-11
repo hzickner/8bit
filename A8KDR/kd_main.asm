@@ -94,20 +94,18 @@ qstr	.byte 'Good bye.',0
 	jsr US_TextScreen
 	jsr VW_Startup
 	jsr RF_Startup
-/*	
-	IN_Startup ();
-	SD_Startup ();
-	US_Startup ();
-
-	CA_Startup ();
-	US_Setup ();
+	jsr IN_Startup
+	jsr SD_Startup
+	jsr US_Startup
+	jsr CA_Startup
+	jsr US_Setup
 
 //
 // load in and lock down some basic chunks
 //
 
-	CA_ClearMarks ();
-
+	jsr CA_ClearMarks
+/*
 	CA_MarkGrChunk(STARTFONT);
 	CA_MarkGrChunk(STARTFONTM);
 	CA_MarkGrChunk(STARTTILE8);

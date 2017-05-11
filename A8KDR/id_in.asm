@@ -1,5 +1,44 @@
 ///////////////////////////////////////////////////////////////////////////
 //
+//	IN_Startup() - Starts up the Input Mgr
+//
+///////////////////////////////////////////////////////////////////////////
+//void IN_Startup(void)
+.proc IN_Startup
+//TODO
+/*
+{
+	boolean	checkjoys,checkmouse;
+	word	i;
+
+	checkjoys = true;
+	checkmouse = true;
+	for (i = 1;i < _argc;i++)
+	{
+		switch (US_CheckParm(_argv[i],ParmStrings))
+		{
+		case 0:
+			checkjoys = false;
+			break;
+		case 1:
+			checkmouse = false;
+			break;
+		}
+	}
+
+	INL_StartKbd();
+	MousePresent = checkmouse? INL_StartMouse() : false;
+
+	for (i = 0;i < MaxJoys;i++)
+		JoysPresent[i] = checkjoys? INL_StartJoy(i) : false;
+
+}
+*/
+	rts
+.endp
+
+///////////////////////////////////////////////////////////////////////////
+//
 //	INL_ShutKbd() - Restores keyboard control to the BIOS
 //
 ///////////////////////////////////////////////////////////////////////////
