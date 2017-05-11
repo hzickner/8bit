@@ -2,6 +2,10 @@
 CLS	= 125
 EOL	= 155
 
+; memory locations
+ROWCRS	= $54
+COLCRS	= $55	; 2 bytes
+
 ; CIO equates for IOCB0
 ICHID  =   $0340
 ICDNO  =   $0341

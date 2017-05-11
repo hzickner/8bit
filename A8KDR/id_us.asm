@@ -87,20 +87,11 @@ US_Shutdown(void)
 //
 ///////////////////////////////////////////////////////////////////////////
 //static void USL_ScreenDraw(word x,word y,char *s,byte attr)
+// args		A,X - y,x
+//		PTR1 - s
 .proc USL_ScreenDraw
-//TODO
-/*
-{
-	byte	far *screen;
-
-	screen = MK_FP(0xb800,(x * 2) + (y * 80 * 2));
-	while (*s)
-	{
-		*screen++ = *s++;
-		*screen++ = attr;
-	}
-}
-*/
+	sta ROWCRS
+	stx COLCRS
 	jsr puts
 	rts
 .endp	
@@ -114,16 +105,10 @@ US_Shutdown(void)
 ///////////////////////////////////////////////////////////////////////////
 //void US_TextScreen(void)
 .proc US_TextScreen
-//TODO
+
 	jsr USL_ClearTextScreen
 /*
-#define	scr_rowcol(y,x)	{sx = (x) - 1;sy = (y) - 1;}
-#define	scr_aputs(s,a)	USL_ScreenDraw(sx,sy,(s),(a))
 scr_rowcol(19,33)      scr_aputs("Please standby...",0x4E);
-#undef	scr_rowcol
-#undef	scr_aputs
-
-}
 */
 	lda <str
 	sta PTR1
@@ -136,6 +121,37 @@ scr_rowcol(19,33)      scr_aputs("Please standby...",0x4E);
 	rts
 // TODO move to rodata segment	
 str	.byte 'Please standby...',0
+
+PTR1	equ $80		
+.endp
+
+///////////////////////////////////////////////////////////////////////////
+//
+//	US_FinishTextScreen() - After the main program has finished its initial
+//		loading, this routine waits for a keypress and then clears the screen
+//
+///////////////////////////////////////////////////////////////////////////
+//void US_FinishTextScreen(void)
+.proc US_FinishTextScreen
+
+	// Change Loading... to Press a Key
+	//USL_ScreenDraw(30, 18, "Ready - Press a Key",0xCE);
+	lda <str
+	sta PTR1
+	lda >str
+	sta PTR1+1
+	lda #12
+	ldx #10
+	jsr USL_ScreenDraw
+
+	jsr IN_ClearKeysDown
+	jsr IN_Ack
+	jsr IN_ClearKeysDown
+
+	jsr USL_ClearTextScreen
+	rts
+// TODO move to rodata segment	
+str	.byte 'Ready - Press a Key',0
 
 PTR1	equ $80		
 .endp	
