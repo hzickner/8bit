@@ -1,7 +1,7 @@
 // defines
 NumCodes	equ	64
 
-sc_None		equ	255
+sc_None		equ	3	; invalid keycode on A8
 /*
 #define	sc_Bad			0xff
 sc_Return	equ	12
@@ -190,12 +190,12 @@ PTR1	equ $80
 //void IN_AckBack(void)
 .proc IN_AckBack
 //TODO
-/*
-{
-	word	i;
 
-	while (!LastScan)
-	{
+	//while (LastScan == sc_None)
+l1:	lda LastScan
+	cmp #sc_None
+
+/*
 		for (i = 0;i < MaxJoys;i++)
 		{
 			if (JoysPresent[i])
@@ -208,8 +208,9 @@ PTR1	equ $80
 				}
 			}
 		}
-	}
 */
+	beq l1
+
 	ldx LastScan
 	jsr IN_ClearKey
 //	LastScan = sc_None;	already done by ClearKey

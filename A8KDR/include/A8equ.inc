@@ -20,7 +20,13 @@ ICBLH  =   $0349
 ICAX1  =   $034A
 ICAX2  =   $034B
 
+SDMCTL	=	$22F
+SDLSTL	=	$230
+SDLSTH	=	$231
+
 KBCODE	=	$D209	; bit 2 last key still pressed
 			; bit 3 shift pressed
 SKSTAT 	=	$D20F	; (R) kbcode of last key pressed
-STIMER	=	$D20F	; (W) 
+STIMER	=	$D20F	; (W)
+
+VCOUNT	=	$D40B 

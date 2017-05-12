@@ -128,11 +128,12 @@ qstr	.byte 'Good bye.',0
 	fontcolor = WHITE;
 */
 	jsr US_FinishTextScreen
-/*
-	VW_SetScreenMode (GRMODE);
-	VW_ClearVideo (BLACK);
-}
-*/
+
+	lda #GRMODE
+	jsr VW_SetScreenMode
+	
+	lda #BLACK
+	jsr VW_ClearVideo
 
 	rts
 .endp
@@ -160,4 +161,6 @@ qstr	.byte 'Demo loop exited???',0
 PTR1	equ $80	
 .endp
 
+	ICL "dlists.asm"
+	
 	run main
