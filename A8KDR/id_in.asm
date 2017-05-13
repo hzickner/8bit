@@ -96,7 +96,25 @@ LastScan	.DS	1
 	sta LastScan
 skip	rts
 .endp
-		
+
+///////////////////////////////////////////////////////////////////////////
+//
+//	INL_StartKbd() - Sets up my keyboard stuff for use
+//
+///////////////////////////////////////////////////////////////////////////
+//static void INL_StartKbd(void)
+.proc INL_StartKbd
+//TODO
+	jsr IN_ClearKeysDown
+/*
+	OldKeyVect = getvect(KeyInt);
+	setvect(KeyInt,INL_KeyService);
+
+}
+*/
+	rts
+.endp
+			
 ///////////////////////////////////////////////////////////////////////////
 //
 //	IN_Startup() - Starts up the Input Mgr
@@ -111,9 +129,9 @@ skip	rts
 	word	i;
 
 	checkjoys = true;
-
-	INL_StartKbd();
-
+*/
+	jsr INL_StartKbd
+/*
 	for (i = 0;i < MaxJoys;i++)
 		JoysPresent[i] = checkjoys? INL_StartJoy(i) : false;
 

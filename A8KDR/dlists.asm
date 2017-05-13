@@ -1,5 +1,7 @@
 ; display lists
 
+.align $400
+
 TEXTDL:
 	.DB $70,$70,$70			; 3 x 8 blank scanlines
 	.DB $42				; antic mode 2 screen ptr follows 40x24 text mode

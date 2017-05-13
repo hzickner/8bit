@@ -29,4 +29,6 @@ KBCODE	=	$D209	; bit 2 last key still pressed
 SKSTAT 	=	$D20F	; (R) kbcode of last key pressed
 STIMER	=	$D20F	; (W)
 
-VCOUNT	=	$D40B 
+VCOUNT	=	$D40B
+
+SETVBV	=	$E45C

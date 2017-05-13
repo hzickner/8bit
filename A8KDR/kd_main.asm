@@ -15,6 +15,7 @@
 	ICL "id_us.asm"
 	ICL "id_vw.asm"
 	ICL "kd_demo.asm"
+	ICL "interrupt.asm"
 
 /*
 ==========================
@@ -100,6 +101,8 @@ qstr	.byte 'Good bye.',0
 	jsr US_Startup
 	jsr CA_Startup
 	jsr US_Setup
+	
+	;jsr INT_Setup		; install general VBLANK interrupt routine
 
 //
 // load in and lock down some basic chunks
