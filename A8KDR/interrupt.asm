@@ -7,16 +7,7 @@
 .endp
 
 .proc kd_int
-	pha
-	txa
-	pha
-	tya
-	pha			; save registers
+
 	
-	pla
-	tay
-	pla
-	tax
-	pla			; restore registers
-	rti			; return from interrupt
+	jmp XITVBV		; exit from interrupt handling routine
 .endp
