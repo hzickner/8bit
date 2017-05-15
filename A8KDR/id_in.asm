@@ -83,6 +83,34 @@ Keyboard	.DS	NumCodes
 LastASCII	.DS	1
 LastScan	.DS	1
 
+//	Internal variables
+CurCode		.DS	1
+LastCode	.DS	1
+//static	boolean		CapsLock;
+/*static	byte        ASCIINames[] =		// Unshifted ASCII for scan codes
+					{
+//	 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+	0  ,27 ,'1','2','3','4','5','6','7','8','9','0','-','=',8  ,9  ,	// 0
+	'q','w','e','r','t','y','u','i','o','p','[',']',13 ,0  ,'a','s',	// 1
+	'd','f','g','h','j','k','l',';',39 ,'`',0  ,92 ,'z','x','c','v',	// 2
+	'b','n','m',',','.','/',0  ,'*',0  ,' ',0  ,0  ,0  ,0  ,0  ,0  ,	// 3
+	0  ,0  ,0  ,0  ,0  ,0  ,0  ,'7','8','9','-','4','5','6','+','1',	// 4
+	'2','3','0',127,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,	// 5
+	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,	// 6
+	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0		// 7
+					},
+*/
+// TODO move to rodata
+// Unshifted ASCII for scan codes
+ASCIINames	.byte 'L','J',0,0,0,'K',0,0
+		.byte 'O',0,0,0,0,0,0,0
+		.byte 'V',0,0,0,0,0,0,0
+		.byte '4',0,0,0,0,0,0,0
+		.byte ',',0,0,0,0,0,0,0
+		.byte 'R',0,0,0,0,0,0,0
+		.byte '9',0,0,0,0,0,0,0
+		.byte 'F',0,0,0,0,0,0,0
+
 //	Makros
 //#define	IN_ClearKey(code)	{Keyboard[code] = false;\
 //							if (code == LastScan) LastScan = sc_None;}
@@ -99,19 +127,107 @@ skip	rts
 
 ///////////////////////////////////////////////////////////////////////////
 //
+//	INL_KeyService() - Handles a keyboard interrupt (key up/down)
+//
+///////////////////////////////////////////////////////////////////////////
+//static void interrupt INL_KeyService(void)
+.proc INL_KeyService
+//TODO
+	//k = inportb(0x60);	// Get the scan code
+	lda KBCODE
+	and $3F
+	tax
+
+	// Tell the XT keyboard controller to clear the key
+	//outportb(0x61,(temp = inportb(0x61)) | 0x80);
+	//outportb(0x61,temp);
+
+//	if (k == 0xe0)		// Special key prefix
+//		special = true;
+//	else if (k == 0xe1)	// Handle Pause key
+//		Paused = true;
+/*
+	else
+	{
+		if (k & 0x80)	// Break code
+		{
+			k &= 0x7f;
+
+// DEBUG - handle special keys: ctl-alt-delete, print scrn
+
+			Keyboard[k] = false;
+		}
+		else			// Make code
+		{
+*/
+	// LastCode = CurCode;
+	lda CurCode
+	sta LastCode
+
+	// CurCode = LastScan = k;
+	stx LastScan
+	stx CurCode
+	
+	// Keyboard[k] = true;
+	lda #01
+	sta Keyboard,X
+	
+/*
+			if (special)
+				c = SpecialNames[k];
+			else
+			{
+				if (k == sc_CapsLock)
+				{
+					CapsLock ^= true;
+					// DEBUG - make caps lock light work
+				}
+
+				if (Keyboard[sc_LShift] || Keyboard[sc_RShift])	// If shifted
+				{
+					c = ShiftNames[k];
+					if ((c >= 'A') && (c <= 'Z') && CapsLock)
+						c += 'a' - 'A';
+				}
+				else
+				{
+*/
+/*
+					c = ASCIINames[k];
+					if ((c >= 'a') && (c <= 'z') && CapsLock)
+						c -= 'a' - 'A';
+				}
+			}
+			if (c)
+				LastASCII = c;
+*/
+	lda ASCIINames,X
+	sta LastASCII
+/*	
+		}
+
+		special = false;
+	}
+
+
+	outportb(0x20,0x20);
+}
+*/
+	rts
+.endp	
+
+///////////////////////////////////////////////////////////////////////////
+//
 //	INL_StartKbd() - Sets up my keyboard stuff for use
 //
 ///////////////////////////////////////////////////////////////////////////
 //static void INL_StartKbd(void)
 .proc INL_StartKbd
-//TODO
 	jsr IN_ClearKeysDown
-/*
-	OldKeyVect = getvect(KeyInt);
-	setvect(KeyInt,INL_KeyService);
 
-}
-*/
+	//setvect(KeyInt,INL_KeyService);
+	//called from VBLANK ISR
+
 	rts
 .endp
 			

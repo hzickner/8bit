@@ -7,7 +7,7 @@
 .endp
 
 .proc kd_int
-
+	jsr INL_KeyService
 	
 	jmp XITVBV		; exit from interrupt handling routine
 .endp
