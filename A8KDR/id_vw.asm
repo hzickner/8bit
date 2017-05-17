@@ -64,26 +64,33 @@ BLACK		equ	0	; use color0 for black
 //TODO
 	cmp #TEXTGR
 	bne grm
-	ldx <TEXTDL
-	ldy >TEXTDL
+	ldx #<TEXTDL
+	ldy #>TEXTDL
 		
 	jmp out		
 grm
-	ldx <GRDL
-	ldy >GRDL
+	ldx #<GRDL
+	ldy #>GRDL
 
 out
-
+	stx B1		; temp store for X
 	lda #DMA_OFF
 	sta SDMCTL	; DMA off
-	lda #1
+	ldx #1
 	jsr VW_WaitVBL	; wait 1 VSYNC
+	ldx B1		; restore X
 	sei		; disable interrupts
 	stx SDLSTL	
 	sty SDLSTH	; set DLIST
 	cli		; enable interrupts
-	lda #1		
+	ldx #1		
 	jsr VW_WaitVBL	; wait 1 VSYNC
+
+	lda #<scr_mem
+	sta SAVMSC
+	lda #>scr_mem
+	sta SAVMSC+1	; update screen mem location for OS
+	
 	lda #DMA_ON
 	sta SDMCTL	; DMA on
 	
@@ -91,6 +98,8 @@ out
 	jsr VW_SetLineWidth
 
 	rts
+	
+B1	= $80	
 .endp	
 
 /*
@@ -147,26 +156,19 @@ asm	out	dx,ax
 //void	VW_ClearVideo (int color)
 .proc VW_ClearVideo
 //TODO
-/*
-{
-#if GRMODE == EGAGR
-	EGAWRITEMODE(2);
-	EGAMAPMASK(15);
-#endif
+	lda #<scr_mem
+	sta PTR1
+	lda #>scr_mem
+	sta PTR1+1
+	
+	ldx #<scr_size
+	ldy #>scr_size
+	lda #0
+	jsr memset16
 
-asm	mov	es,[screenseg]
-asm	xor	di,di
-asm	mov	cx,0xffff
-asm	mov	al,[BYTE PTR color]
-asm	rep	stosb
-asm	stosb
-
-#if GRMODE == EGAGR
-	EGAWRITEMODE(0);
-#endif
-}
-*/
 	rts
+scr_size	= 3840
+PTR1		= $80
 .endp
 
 ;========

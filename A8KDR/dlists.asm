@@ -34,4 +34,4 @@ GRDL:
 	.DB $0D,$0D,$0D,$0D,$0D,$0D
 	.DB $0D,$0D,$0D,$0D,$0D,$0D	; 95 more lines of mode D
 	.DB $41				; wait vbl and jump to start
-	.DW TEXTDL	
+	.DW GRDL	

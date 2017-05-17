@@ -5,6 +5,7 @@ EOL	= 155
 ; memory locations
 ROWCRS	= $54
 COLCRS	= $55	; 2 bytes
+SAVMSC	= $58	; 2 bytes screen memory
 
 ; CIO equates for IOCB0
 ICHID  =   $0340
@@ -24,10 +25,10 @@ SDMCTL	=	$22F
 SDLSTL	=	$230
 SDLSTH	=	$231
 
-KBCODE	=	$D209	; bit 2 last key still pressed
+KBCODE	=	$D209	; (R) kbcode of last key pressed
+SKSTAT 	=	$D20F	; bit 2 last key still pressed
 			; bit 3 shift pressed
-SKSTAT 	=	$D20F	; (R) kbcode of last key pressed
-STIMER	=	$D20F	; (W)
+STIMER	=	$D20F
 
 VCOUNT	=	$D40B
 

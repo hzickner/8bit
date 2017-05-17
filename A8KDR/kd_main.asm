@@ -2,7 +2,8 @@
 	org $2000
 	
 	ICL "include/A8equ.inc"
-	ICL "include/memset8.asm"
+	;ICL "include/memset8.asm"
+	ICL "include/memset16.asm"
 	ICL "include/puts.asm"
 	ICL "include/putc.asm"
 	ICL "include/exit.asm"
@@ -102,7 +103,7 @@ qstr	.byte 'Good bye.',0
 	jsr CA_Startup
 	jsr US_Setup
 	
-	;jsr INT_Setup		; install general VBLANK interrupt routine
+	jsr INT_Setup		; install general VBLANK interrupt routine
 
 //
 // load in and lock down some basic chunks

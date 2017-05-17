@@ -78,7 +78,7 @@ key_None	equ	0
 //TODO move to rwdata
 
 //boolean		Keyboard[NumCodes]
-Keyboard	.DS	NumCodes
+Keyboard	.DS	1	; A8 cannot handle multiple keys simultaneously
 //char		LastASCII;
 LastASCII	.DS	1
 LastScan	.DS	1
@@ -86,6 +86,7 @@ LastScan	.DS	1
 //	Internal variables
 CurCode		.DS	1
 LastCode	.DS	1
+LastStat	.DS	1	; indicator for key pressed
 //static	boolean		CapsLock;
 /*static	byte        ASCIINames[] =		// Unshifted ASCII for scan codes
 					{
@@ -116,11 +117,10 @@ ASCIINames	.byte 'L','J',0,0,0,'K',0,0
 //							if (code == LastScan) LastScan = sc_None;}
 ; args - X code
 .proc IN_ClearKey
-	lda #0
-	sta Keyboard,X
+	lda #sc_None
+	sta Keyboard
 	cpx LastScan
 	bne skip
-	lda #sc_None
 	sta LastScan
 skip	rts
 .endp
@@ -133,87 +133,49 @@ skip	rts
 //static void interrupt INL_KeyService(void)
 .proc INL_KeyService
 //TODO
-	//k = inportb(0x60);	// Get the scan code
-	lda KBCODE
-	and $3F
-	tax
 
-	// Tell the XT keyboard controller to clear the key
-	//outportb(0x61,(temp = inportb(0x61)) | 0x80);
-	//outportb(0x61,temp);
+	lda SKSTAT
+	and #$04
+	cmp LastStat
+	beq out			; test for key event
+	sta LastStat		
 
-//	if (k == 0xe0)		// Special key prefix
-//		special = true;
-//	else if (k == 0xe1)	// Handle Pause key
-//		Paused = true;
-/*
-	else
-	{
-		if (k & 0x80)	// Break code
-		{
-			k &= 0x7f;
+	and #$04
+	beq else
+	lda #sc_None
+	sta Keyboard		; key release
+	jmp out2			
 
-// DEBUG - handle special keys: ctl-alt-delete, print scrn
-
-			Keyboard[k] = false;
-		}
-		else			// Make code
-		{
-*/
+else
 	// LastCode = CurCode;
 	lda CurCode
 	sta LastCode
-
+	
+	lda KBCODE
+	and #$3F				; mask out shift,ctrl
+	
 	// CurCode = LastScan = k;
-	stx LastScan
-	stx CurCode
+	sta LastScan
+	sta CurCode
 	
 	// Keyboard[k] = true;
-	lda #01
-	sta Keyboard,X
+	sta Keyboard
 	
-/*
-			if (special)
-				c = SpecialNames[k];
-			else
-			{
-				if (k == sc_CapsLock)
-				{
-					CapsLock ^= true;
-					// DEBUG - make caps lock light work
-				}
-
-				if (Keyboard[sc_LShift] || Keyboard[sc_RShift])	// If shifted
-				{
-					c = ShiftNames[k];
-					if ((c >= 'A') && (c <= 'Z') && CapsLock)
-						c += 'a' - 'A';
-				}
-				else
-				{
-*/
-/*
-					c = ASCIINames[k];
-					if ((c >= 'a') && (c <= 'z') && CapsLock)
-						c -= 'a' - 'A';
-				}
-			}
-			if (c)
-				LastASCII = c;
-*/
 	lda ASCIINames,X
-	sta LastASCII
+	sta LastASCII		; key press
+
+out2
 /*	
-		}
-
-		special = false;
-	}
-
-
-	outportb(0x20,0x20);
-}
-*/
-	rts
+	lda #<scr_mem
+	sta PTR1
+	lda #>scr_mem
+	sta PTR1+1
+	lda Keyboard
+	ldy #0
+	sta (PTR1),Y
+*/	
+out	rts
+//PTR1	= $82
 .endp	
 
 ///////////////////////////////////////////////////////////////////////////
@@ -300,16 +262,15 @@ INL_ShutKbd(void)
 //	LastASCII = key_None;
 	lda #key_None
 	sta LastASCII
+	
+	lda SKSTAT
+	and #$0C
+	sta LastStat
 
 //	for (i = 0;i < NumCodes;i++)
 //		Keyboard[i] = false;
-	ldy #NumCodes
-	lda <Keyboard
-	sta PTR1
-	lda >Keyboard
-	sta PTR1+1
-	lda #0
-	jsr memset8
+	lda #sc_None
+	sta Keyboard
 	
 	rts
 	

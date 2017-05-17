@@ -81,5 +81,9 @@ DemoLoop (void)
 */
 .proc DemoLoop
 // TODO
+	jsr IN_ClearKeysDown
+	jsr IN_Ack
+	jsr IN_ClearKeysDown
+l1	jmp l1	
 	rts
 .endp
