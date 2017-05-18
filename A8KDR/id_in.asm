@@ -264,7 +264,7 @@ INL_ShutKbd(void)
 	sta LastASCII
 	
 	lda SKSTAT
-	and #$0C
+	and #$04
 	sta LastStat
 
 //	for (i = 0;i < NumCodes;i++)

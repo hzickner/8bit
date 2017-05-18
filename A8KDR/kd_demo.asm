@@ -5,9 +5,9 @@
 =
 =====================
 */
+//void DemoLoop (void)
+.proc DemoLoop
 /*
-void
-DemoLoop (void)
 {
 	char		*s;
 	word		move;
@@ -27,8 +27,12 @@ DemoLoop (void)
 
 	if (findfirst("KDREAMS.CMP", &ffblk, 0) == -1)
 		Quit("Couldn't find KDREAMS.CMP");
+*/
+	//while (true)
+l1	
 
-	while (true)
+
+/*	
 	{
 
 		loadedgame = false;
@@ -74,16 +78,9 @@ DemoLoop (void)
 			NewGame();
 
 		FreeShape(&FileShape1);
-
-		GameLoop();
-	}
-}
 */
-.proc DemoLoop
-// TODO
-	jsr IN_ClearKeysDown
-	jsr IN_Ack
-	jsr IN_ClearKeysDown
-l1	jmp l1	
-	rts
+	jsr GameLoop
+
+	jmp l1	; while (true)
+
 .endp

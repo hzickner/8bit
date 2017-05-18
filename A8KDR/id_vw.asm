@@ -73,12 +73,12 @@ grm
 	ldy #>GRDL
 
 out
-	stx B1		; temp store for X
+	stx B3		; temp store for X
 	lda #DMA_OFF
 	sta SDMCTL	; DMA off
 	ldx #1
 	jsr VW_WaitVBL	; wait 1 VSYNC
-	ldx B1		; restore X
+	ldx B3		; restore X
 	sei		; disable interrupts
 	stx SDLSTL	
 	sty SDLSTH	; set DLIST
@@ -99,7 +99,7 @@ out
 
 	rts
 	
-B1	= $80	
+B3	= $82	
 .endp	
 
 /*
@@ -161,8 +161,8 @@ asm	out	dx,ax
 	lda #>scr_mem
 	sta PTR1+1
 	
-	ldx #<scr_size
-	ldy #>scr_size
+	ldy #<scr_size
+	ldx #>scr_size
 	lda #0
 	jsr memset16
 

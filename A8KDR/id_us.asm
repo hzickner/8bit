@@ -60,23 +60,30 @@ US_Shutdown(void)
 ///////////////////////////////////////////////////////////////////////////
 //static void USL_ClearTextScreen(void)
 .proc USL_ClearTextScreen
-//TODO
-/*
-{
-	// Set to 80x25 color text mode
-	_AL = 3;				// Mode 3
-	_AH = 0x00;
-	geninterrupt(0x10);
+//TODO join with VW_SetScreenMode
 
-	// Use BIOS to move the cursor to the bottom of the screen
-	_AH = 0x0f;
-	geninterrupt(0x10);		// Get current video mode into _BH
-	_DL = 0;				// Lefthand side of the screen
-	_DH = 24;				// Bottom row
-	_AH = 0x02;
-	geninterrupt(0x10);
-}
-*/
+	lda #DMA_OFF
+	sta SDMCTL	; DMA off
+	ldx #1
+	jsr VW_WaitVBL	; wait 1 VSYNC
+	ldx #<TEXTDL
+	ldy #>TEXTDL
+	sei		; disable interrupts
+	stx SDLSTL	
+	sty SDLSTH	; set DLIST
+	cli		; enable interrupts
+	ldx #1		
+	jsr VW_WaitVBL	; wait 1 VSYNC
+
+	lda #<scr_mem
+	sta SAVMSC
+	lda #>scr_mem
+	sta SAVMSC+1	; update screen mem location for OS
+	
+	lda #DMA_ON
+	sta SDMCTL	; DMA on
+
+	jsr clrscr
 	rts
 .endp	
 
@@ -148,7 +155,6 @@ PTR1	equ $80
 	jsr IN_Ack
 	jsr IN_ClearKeysDown
 
-	jsr USL_ClearTextScreen
 	rts
 // TODO move to rodata segment	
 str	.byte 'Ready - Press a Key',0

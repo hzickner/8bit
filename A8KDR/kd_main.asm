@@ -16,6 +16,7 @@
 	ICL "id_us.asm"
 	ICL "id_vw.asm"
 	ICL "kd_demo.asm"
+	ICL "kd_play.asm"
 	ICL "interrupt.asm"
 
 /*
