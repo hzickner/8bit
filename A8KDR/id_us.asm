@@ -1,3 +1,22 @@
+/*
+typedef	enum
+		{
+			gd_Continue,
+			gd_Easy,
+			gd_Normal,
+			gd_Hard
+		} GameDiff;
+*/
+gd_Continue	equ 	0
+gd_Easy		equ	1
+gd_Normal	equ	2
+gd_Hard		equ	3
+
+// global variables
+// TODO move to rwdata
+restartgame	.byte gd_Continue
+loadedgame	.byte
+
 ///////////////////////////////////////////////////////////////////////////
 //
 //	US_Startup() - Starts the User Mgr

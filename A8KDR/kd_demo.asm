@@ -1,6 +1,31 @@
 /*
 =====================
 =
+= GameOver
+=
+=====================
+*/
+//void GameOver (void)
+.proc GameOver
+/*
+{
+	VW_InitDoubleBuffer ();
+	US_CenterWindow (16,3);
+
+	US_PrintCentered("Game Over!");
+
+	VW_UpdateScreen ();
+	IN_ClearKeysDown ();
+	IN_Ack ();
+
+}
+*/
+	rts
+.endp
+
+/*
+=====================
+=
 = DemoLoop
 =
 =====================
