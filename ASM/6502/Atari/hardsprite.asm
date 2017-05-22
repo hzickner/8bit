@@ -1,6 +1,11 @@
 ; defines
 DMA_OFF		equ 0
-DMA_PM		equ 34
+DMA_PM		equ 62
+
+xmin		equ 48
+xmax		equ 200
+ymin		equ 32
+ymax		equ 216
 
 PL_ON		equ 2
 
@@ -10,6 +15,7 @@ WHITE		equ 15
 SDMCTL		equ	$22F
 SDLSTL		equ	$230
 SDLSTH		equ	$231
+GPRIOR		equ	$26F
 PCOLR0		equ	$2C0
 
 HPOSP0		equ	$D000
@@ -23,7 +29,8 @@ VCOUNT		equ	$D40B
 ; zero page
 plx	equ	$80
 ply	equ	$81
-ptr1	equ	$82
+oply	equ	$82
+ptr1	equ	$83
 
 
 	org $2000
@@ -33,8 +40,21 @@ ptr1	equ	$82
 	jsr init_display
 	
 loop
-	inc plx
-	inc ply
+	ldx plx
+	inx
+	cpx #xmax+1
+	bne s1
+	ldx #xmin
+s1	stx plx	
+	
+	ldx ply
+	stx oply
+	inx
+	cpx #ymax+1
+	bne s2
+	ldx #ymin
+s2	stx ply		
+	
 	jsr set_pl0pos
 	jsr WaitVBL
 	jmp loop	
@@ -48,16 +68,22 @@ loop
 	sta ptr1
 	lda #>PL0
 	sta ptr1+1
+	lda #1
+	sta GPRIOR
 	lda #0
-	sta plx
-	sta ply
 	sta SIZEP0
 	tay
-	
+
 l1:	sta (ptr1),Y
 	dey
 	bne l1
-	
+
+	lda #xmin
+	sta plx
+	lda #ymin
+	sta ply
+	sta oply
+		
 	jsr set_pl0pos
 	
 	lda #WHITE
@@ -69,8 +95,20 @@ l1:	sta (ptr1),Y
 	rts
 .endp
 
-.proc set_pl0pos
-/*
+.proc set_pl0pos	; x $30..$C8;48..200;152 		y $20..$D8;32..216;184
+
+	clc
+	lda oply
+	adc #<PL0
+	sta ptr1
+	lda #>PL0
+	sta ptr1+1
+	ldy #7
+	lda #0
+l2:	sta (ptr1),Y
+	dey
+	bpl l2	
+	
 	clc
 	lda ply
 	adc #<PL0
@@ -82,14 +120,7 @@ l1:	lda pldata,Y
 	sta (ptr1),Y
 	dey
 	bpl l1
-
-	lda #0
-	ldy #8
-	sta (ptr1),Y
-	dec ptr1
-	tay
-	sta (ptr1),Y
-*/	
+	
 	lda plx
 	sta HPOSP0
 	
