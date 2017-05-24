@@ -74,7 +74,7 @@ L00C6       = $00C6
 L00C9       = $00C9
 L00D0       = $00D0
 L00D1       = $00D1
-L00D2       = $00D2
+L00D2       = $00D2	; flag for initialized?
 L00D3       = $00D3
 L00D4       = $00D4
 L00D7       = $00D7
@@ -114,13 +114,13 @@ L00FD       = $00FD
 L00FE       = $00FE
 L00FF       = $00FF
 L0F16       = $0F16
-L100E       = $100E
+
 L101A       = $101A
 L1020       = $1020
 L1023       = $1023
-L1024       = $1024
+
 L102B       = $102B
-L1038       = $1038
+
 L1BD8       = $1BD8
 L2000       = $2000
 L3018       = $3018
@@ -177,15 +177,15 @@ L3FD2       = $3FD2
 ;
 ; Start of code
 ;
-            org $3FE0
+/*            org $3FE0
 ;
 CAS_LOADADR_L3FE0:
             .byte $00,$4C
             .word CAS_LOADADR_L3FE0,CAS_INIT_L3FF8
-            lda #<START_L545D
+            lda #<main
             sta CASINI
             sta DOSVEC
-            lda #>START_L545D
+            lda #>main
             sta CASINI+1
             sta DOSVEC+1
             lda #$02
@@ -194,6 +194,16 @@ CAS_LOADADR_L3FE0:
             rts
 CAS_INIT_L3FF8:
             rts
+*/
+            org $100E
+scrline1	.DS 22
+scrline2	.DS 20
+grscreen	.DS 101*40
+grscreen2	.DS 101*40
+scrline3	.DS 40
+            
+            org $3FF9
+            
             .byte $00,$00,$00,$00,$00,$00,$00,$10
             .byte $00,$01,$00,$14,$C0,$C5,$00,$14
             .byte $33,$05,$00,$15,$2A,$15,$00,$05
@@ -439,6 +449,7 @@ CAS_INIT_L3FF8:
             .byte $81,$40,$00,$03,$00,$00,$00,$00
             .byte $00,$00,$00,$00,$00,$00,$00,$00
             .byte $0A,$00,$00,$00,$30,$40,$00
+
 DATA264BY_L47A0:
             .byte $0C,$70,$70,$00,$12,$40,$30,$00
             .byte $12,$00,$0A,$00,$0C,$00,$00,$00
@@ -603,36 +614,38 @@ DATA264BY_L47A0:
             .byte $02,$50,$00,$56,$0E,$64,$0C,$6A
             .byte $0A,$7C,$08,$88,$06,$CD,$08,$E0
             .byte $0A,$00,$00,$00,$00,$00,$00,$00
-SUB_L4CB8:  lda #<L30D8
+//TODO
+.proc SUB_L4CB8
+            lda #<L30D8
             sta PTR_L00B7
             lda #>L30D8
-            sta PTR_L00B7+1
-            lda #<L1038
+            sta PTR_L00B7+1		
+            lda #<grscreen
             sta PTR_L00BA
-            lda #>L1038
-            sta PTR_L00BA+1
+            lda #>grscreen
+            sta PTR_L00BA+1		; init 2 pointer variables
             ldx #$00
-LOOP_L4CCA: lda PTR_L00BA+1
+l1: 	    lda PTR_L00BA+1
             sta TABLEH_L3708,X
             lda PTR_L00BA
-            sta TABLEL_L37E0,X
+            sta TABLEL_L37E0,X		; fill table with grscreen locations
             lda PTR_L00BA
             clc
-            adc #$28
+            adc #40			; one pointer every 40 bytes (every screen line)
             sta PTR_L00BA
             lda PTR_L00BA+1
             adc #$00
             sta PTR_L00BA+1
             inx
-            cpx #$CA
-            bne LOOP_L4CCA
-LOOP_L4CE6: lda #$3A
+            cpx #202			; for all 202 lines
+            bne l1
+l2:         lda #$3A
             sta TABLEH_L3708,X
             lda #$D4
             sta TABLEL_L37E0,X
             inx
-            cpx #$D6
-            bne LOOP_L4CE6
+            cpx #214
+            bne l2			; write 12 more pointers to table, all to $3AD4
             ldy #$00
             lda #$80
             sta L00D0
@@ -770,6 +783,8 @@ SKIP_L4DF2: iny
             pla
             pla
             rts
+.endp            
+            
 SUB_L4DFA:  ldx L00B6
             lda TABLEH_L3708,X
             sta PTR_L00BA+1
@@ -1511,41 +1526,49 @@ LOOP_L544A: lda L5ACC,Y
             cpx #$0A
             bne LOOP_L544A
 OUT_L545C:  rts
-START_L545D:
+
+; program entry
+main:
             lda L00D2
-            bne SKIP_L5465
+            bne s1			; if (initialized) {
             lda #$0F
             sta L00C2
-SKIP_L5465: ldx #$00
-LOOP_L5467: lda DATA15BYTES_L5CF8,X
-            sta RAM15BYTES_L1010,X
+s1:					; } endif
+	    ldx #$00			; for(i=0; i<14; i++) {
+l1:         lda highscore_str,X
+            sta scrline1+2,X
             inx
             cpx #$14
-            bne LOOP_L5467
-L5472:      lda #$03
-            sta SKCTL
+            bne l1			; } endfor ; wite high string to screen
+main_1:     lda #$03
+            sta SKCTL			; enable kbd debounce+scanning, get POKEY out of two tone mode
             lda #$00
             sta L00F8
             sta L00FE
-            sta L0089
-            sta COLOR4
-            sta AUDCTL
+            sta L0089			; some variable inits
+            sta COLOR4			; BAK color black
+            sta AUDCTL			; silence
             lda #<DLIST_L6500
             sta SDLSTL
             lda #>DLIST_L6500
-            sta SDLSTH
-            jsr SUB_L625D
+            sta SDLSTH			; enable custom display list
+
+            jsr SUB_L625D		; initialize plpos + scrline1 pos
+
             lda #$01
             sta L00A9
-            sta L009E
-            jsr SUB_L54F2
+            sta L009E			; variable inits
+
+            jsr SUB_L54F2		; some variable inits
             jsr SUB_L4CB8
             jsr L56DB
             jsr SUB_L556F
+            
             ldx #>VBLKD_L5178
             ldy #<VBLKD_L5178
             lda #$07
-            jsr SETVBV
+            jsr SETVBV			; enable VBLANK routine
+
             lda #$00
             sta L0096
             lda #$02
@@ -1574,8 +1597,11 @@ LOOP_L54E0: lda RAM15BYTES_L3AC0,X
             bne LOOP_L54E0
             lda #$00
             sta L0098
-            jmp L55D9
-SUB_L54F2:  lda #$06
+            jmp main.2
+
+; some variable inits
+.proc SUB_L54F2
+            lda #$06
             sta L00F7
             lda #$05
             sta L009A
@@ -1589,6 +1615,8 @@ SUB_L54F2:  lda #$06
             sta COLORIDX_L00CF
             sta L008F
             rts
+.endp
+            
 SUB_L550D:  ldy #$00
             lda L00F2,X
             sec
@@ -1690,7 +1718,7 @@ LOOP_L55C0: lda RANDOM
             cpx #$3C
             bne LOOP_L55C0
 OUT_L55D8:  rts
-L55D9:      jsr SUB_L55E9
+main.2:      jsr SUB_L55E9
             lda #$06
             sta L00F7
             jsr SUB_L6468
@@ -1792,7 +1820,7 @@ L567B:      lda L00F9,X
             jsr SUB_L58CF
 L56A9:      lda #$00
             sta L00A9
-            jmp L55D9
+            jmp main.2
 L56B0:      inc L00F1
             lda L00F1
             cmp #$02
@@ -1806,7 +1834,7 @@ L56B0:      inc L00F1
             jsr L6240
             lda #$00
             sta AUDC1
-            jmp L5472
+            jmp main_1
 L56D1:      cmp #$06
             bne L56FE
             jsr L56DB
@@ -2345,9 +2373,11 @@ L5CC0:      .byte $50,$80,$30,$44,$A8,$FC,$44,$80
             .byte $A8,$C3
 L5CEA:      .byte $04,$14,$04,$04,$04,$04,$15,$14
             .byte $41,$01,$01,$04,$10,$55
-DATA15BYTES_L5CF8:
-            .byte $00,$00,$00,$00,$28,$29,$27,$28
-            .byte $00,$00,$10,$10,$10,$10,$10,$10
+highscore_str:
+            .byte "    HIGH  0000"
+            ;.byte $00,$00,$00,$00,$28,$29,$27,$28
+            ;.byte $00,$00,$10,$10,$10,$10
+            .byte $10,$10
             .byte $00,$00,$00,$00
 DATA15BYTES_L5D0C:
             .byte $34,$37,$2F,$00,$30,$2C,$21,$39
@@ -2796,7 +2826,7 @@ LOOP_L61C6: lda RTCLOK+2
             cmp #$05
             bne SKIP_L61D7
             jsr SUB_L625D
-            jmp L5472
+            jmp main_1
 SKIP_L61D7: cmp #$06
             bne L6210
 L61DB:      lda L008D
@@ -2822,7 +2852,7 @@ L6202:      jsr L6240
             sta L00F8
             sta L00A9
             sta L0098
-            jmp L55D9
+            jmp main.2
 L6210:      dec L00B1
             lda L00B1
             sta HSCROL
@@ -2855,19 +2885,24 @@ L6240:      lda #$01
             jsr SUB_L4CB8
             jsr SUB_L556F
             jsr SUB_L5562
-SUB_L625D:  ldx #$00
+
+.proc SUB_L625D
+            ldx #$00
             txa
-LOOP_L6260: sta HPOSP0,X
+l1:         sta HPOSP0,X		; set HPOS of all players+missiles to 0
             inx
             cpx #$08
-            bne LOOP_L6260
-            lda #$0E
+            bne l1
+            
+            lda #<scrline1
             sta DLIST_L6500+2
-            lda #$10
+            lda #>scrline1
             sta DLIST_L6500+3
             lda #$00
-            sta HSCROL
+            sta HSCROL			; set initial scrmem address for first line, reset HSCROLL
             rts
+.endp
+            
 SUB_L6278:  lda #$00
             sta L00DC
             lda #$5D
@@ -3181,9 +3216,9 @@ L64D5:      lda L00E2
 DLIST_L6500:
             .byte AEMPTY4
             .byte AHSCR+ALMS+$06
-            .word L100E
+            .word scrline1
             .byte ALMS+$06
-            .word L1024
+            .word scrline2
             .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
             .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
             .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
@@ -3196,7 +3231,7 @@ DLIST_L6500:
             .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
             .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
             .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
-            .byte $0E,$0E,$0E,$0E,$0E
+            .byte $0E,$0E,$0E,$0E,$0E			; 101 lines mode E 4 Colors 160 xres 1 Scanline high, 40 bytes per line
             .byte ALMS+$0E
             .word L2000
             .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
@@ -3211,30 +3246,10 @@ DLIST_L6500:
             .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
             .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
             .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
-            .byte $0E,$0E,$0E,$0E
+            .byte $0E,$0E,$0E,$0E			; 101 lines mode E 4 Colors 160 xres 1 Scanline high, 40 bytes per line
             .byte ALMS+$04
             .word L3018
             .byte AVB+AJMP
             .word DLIST_L6500
-            .byte $00,$00,$00,$00,$00,$00,$00
-;
-            *= $0000
-;
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-            .byte $00,$00,$00,$00,$00,$00,$00,$00
-;
-            run START_L545D         
+
+            run main         
