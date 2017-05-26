@@ -29,24 +29,24 @@ L0089       = $0089
 L008A       = $008A
 L008B       = $008B
 L008C       = $008C
-L008D       = $008D
+twopl1       = $008D	; bool flag for two/one player
 L008E       = $008E
 L008F       = $008F
 L0090       = $0090	; some bool value, toggles skip of subroutine
 L0096       = $0096	; some bool value, toggles skip of subroutine
 L0097       = $0097
 L0098       = $0098
-L0099       = $0099
+twopl2       = $0099	; bool flag for two/one player
 lives       = $009A	; stores lives+1 starts with 5 (4 lives)
 L009B       = $009B
-L009C       = $009C
+L009C       = $009C	; difficulty
 L009D       = $009D
 L009E       = $009E
 L009F       = $009F
 L00A0       = $00A0
 L00A6       = $00A6
 L00A7       = $00A7
-L00A8       = $00A8
+L00A8       = $00A8	; some bool value
 L00A9       = $00A9
 L00AA       = $00AA
 L00AB       = $00AB
@@ -117,7 +117,7 @@ L0F16       = $0F16
 
 L101A       = $101A
 L1020       = $1020
-L1023       = $1023
+
 
 L1BD8       = $1BD8
 
@@ -1640,7 +1640,7 @@ main_1:     lda #$03
             ldy #$00
             jsr SUB_L6123
             jsr init_score
-            lda L0099
+            lda twopl2
             beq SKIP_L54D4
             jsr SUB_L5E95.entry2
 SKIP_L54D4: jsr SUB_L54F2
@@ -2475,12 +2475,11 @@ YESSTR_L5D20:
             .byte "YES "
 DEMOSTR_L5D24:
             .byte "DEMO"            
-;DATA12BYTES_L5D1C:
-            ;.byte $2E,$2F,$00,$00,$39,$25,$33,$00
-            ;.byte $24,$25,$2D,$2F
-DATA15BYTES_L5D28:
+STR14BYTES_L5D28:
             .byte $33,$25,$2C,$25,$23,$34,$00,$24
-            .byte $29,$26,$26,$29,$23,$35,$2C,$34
+            .byte $29,$26,$26,$29,$23,$35
+            
+            .byte $2C,$34
             .byte $39,$00,$00,$11
 DATA_L5D3C: .byte $25,$2E,$27,$2C,$29,$33,$28,$00
             .byte $33,$2F,$26,$34,$37,$21,$32,$25
@@ -2546,7 +2545,9 @@ l1:         lda scrline1+2,X
             
             lda #$07
             sta ZPVAR_L00B3		; $B3=7
-L5EB1:      jsr SUB_L60EB		; //TODO
+
+					; do {
+l3:         jsr wait14frames
             lda STICK0			; read joystick
             cmp #07			; if (east) {
             bne s2
@@ -2570,66 +2571,75 @@ l2:         lda OPTIONSTRINGS,Y
             bne l2			; write option string (no/yes/demo) to screen
             
 s2:         lda STRIG0			; //TODO
-            bne L5EB1
-            lda L1020
-            cmp #$24
-            beq SKIP_L5EF5
-            cmp #$2E
-            bne SKIP_L5F00
-            lda #$00
-            sta L0099
-            sta L008D
-            jmp entry2
-SKIP_L5EF5: lda #$00
-            sta L0099
-            sta L008D
+            bne l3			; enddo } until (trigger pressed)
+
+            lda scrline1+18
+            cmp #"D"			; if (scrline1[18] != "D") {
+            beq s3
+            cmp #"N"		
+            bne s4
+            lda #$00			; scrline1[18] == N { , "NO" single player
+            sta twopl2	
+            sta twopl1			; $99 = $8D = 0
+            jmp entry2			; } continue at entry2
+s3:         lda #$00			; } else scrline1[18] == "D" { , DEMO mode
+            sta twopl2
+            sta twopl1			; $99 = $8D = 0	
             lda #$01
-            sta L0096
+            sta L0096			; $96 = 1
             rts
-SKIP_L5F00: lda #$01
-            sta L0099
-            sta L008D
-entry2:
+s4:         lda #$01			; scrline1[18] != "D" && != "N" { ("YES")
+            sta twopl2			
+            sta twopl1			; $99 = $8D = 1 ,two players continue at entry2
+entry2:					; } 
             ldx #$00
-LOOP_L5F08: lda DATA15BYTES_L5D28,X
+l4:         lda STR14BYTES_L5D28,X
             sta scrline1+2,X
             inx
             cpx #$14
-            bne LOOP_L5F08
-            lda L0099
-            beq L5F1A
-            jsr SUB_L5F41
-L5F1A:      jsr SUB_L60EB
-            lda STICK0
+            bne l4			; write string to scrline1
+            
+            lda twopl2
+            beq s5
+            jsr SUB_L5F41		; if (twopl2) jsr //TODO
+s5:         jsr wait14frames
+
+l5:         lda STICK0			; do {
             cmp #$07
-            bne SKIP_L5F33
-            inc L1023
-            lda L1023
-            cmp #$14
-            bne SKIP_L5F33
-            lda #$11
-            sta L1023
-SKIP_L5F33: lda STRIG0
-            bne L5F1A
-            lda L1023
+            bne s6			; if (stick0==east) {
+            inc scrline1+21			; scrline1[21]++
+            lda scrline1+21
+            cmp #"4"
+            bne s6			; if (scrline1[21]=="4") scrline1[21]="1"
+            lda #"1"
+            sta scrline1+21		; } endif 
+
+s6:         lda STRIG0			
+            bne l5			; } enddo until trigger pressed
+
+            lda scrline1+21
             sec
             sbc #$10
-            sta L009C
+            sta L009C			; $9C = difficulty (1..3)
+            rts
+.endp
+
+.proc SUB_L5F41
+            lda ZPVAR_L00B3
+            cmp #$00
+            bne s1
+            lda #$07
+            sta ZPVAR_L00B3		; if (B3==0) B3=7
+            jsr SUB_L6011		; //TODO
+            rts
+       
+s1:         lda #$00
+            sta ZPVAR_L00B3		; else B3=0
+            jsr SUB_L6011		; //TODO
             rts
 .endp
             
-SUB_L5F41:  lda ZPVAR_L00B3
-            cmp #$00
-            bne SKIP_L5F4F
-            lda #$07
-            sta ZPVAR_L00B3
-            jsr SUB_L6011
-            rts
-SKIP_L5F4F: lda #$00
-            sta ZPVAR_L00B3
-            jsr SUB_L6011
-            rts
-L5F57:      lda L0099
+L5F57:      lda twopl2
             bne L5F5E
             jmp L5FE9
 L5F5E:      jsr SUB_L60FA
@@ -2640,10 +2650,10 @@ L5F5E:      jsr SUB_L60FA
             lda lives
             bne L5F79
             jsr L5FEE
-            lda L0099
-            sta L008D
+            lda twopl2
+            sta twopl1
             lda #$00
-            sta L0099
+            sta twopl2
 L5F79:      ldy L009D
             beq L5F8F
             lda #$00
@@ -2825,14 +2835,18 @@ L60DD:      lda PTR_L00BA
             adc #$00
             sta PTR_L00BA+1
             rts
-SUB_L60EB:  lda #$00
+
+.proc wait14frames:  
+	    lda #$00
             sta RTCLOK+2
-LOOP_L60EF: lda #$01
-            sta L00A8
+l1:         lda #$01
+            sta L00A8		; $A8=1
             lda RTCLOK+2
-            cmp #$14
-            bne LOOP_L60EF
+            cmp #$14		; wait 14 frames
+            bne l1
             rts
+.endp            
+            
 SUB_L60FA:  ldx #$00
 L60FC:      lda L3988,X
             bmi L611D
@@ -2932,8 +2946,8 @@ LOOP_L61C6: lda RTCLOK+2
             jmp main_1
 SKIP_L61D7: cmp #$06
             bne L6210
-L61DB:      lda L008D
-            sta L0099
+L61DB:      lda twopl1
+            sta twopl2
             beq L6202
             lda L3AB7
             pha
