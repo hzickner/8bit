@@ -2720,18 +2720,22 @@ L6001:      lda #$00
             bne L6010
             jmp L6191
 L6010:      rts
-SUB_L6011:  lda #$00
+
+.proc SUB_L6011
+            lda #$00
             sta RTCLOK+2
-LOOP_6015:  lda #$01
-            sta L00A8
+l1:         lda #$01
+            sta L00A8			; $A8=1
             lda ZPVAR_L00B3
-            sta L00DC
-            jsr SUB_L6070
+            sta L00DC			; $DC = $B3
+            jsr SUB_L6070		; //TODO
             lda RTCLOK+2
-            cmp #$64
-            bne LOOP_6015
-            jsr L60C2
+            cmp #$64			; wait 64frames
+            bne l1
+            jsr L60C2			; //TODO
             rts
+.endp
+            
 L602A:      lda #$00
             sta RTCLOK+2
 L602E:      lda #$01
@@ -2762,41 +2766,47 @@ L605D:      lda L5C7A,X
             inx
             dec ZPVAR_L00B2
             bne L605D
-            jsr L60DD
+            jsr BAptr_nextLine
             dec L00B1
             bne L6057
             rts
-SUB_L6070:  lda #$07
-            sta L00B1
-            lda #$00
-            pha
-            lda #<L1BD8
+//TODO            
+.proc SUB_L6070
+            lda #$07
+            sta L00B1			; $B1=7
+            lda #$00			
+            pha				; push 0
+            lda #<(grscreen+1052)	; (74*40)+16
             sta PTR_L00BA
-            lda #>L1BD8
-            sta PTR_L00BA+1
-L607F:      lda #$06
-            sta ZPVAR_L00B2
-            pla
-            tax
-            ldy #$00
-LOOP_L6087: lda L5CC0,X
-            sta (PTR_L00BA),Y
-            iny
-            inx
+            lda #>(grscreen+1052)	;(74*40)+16	
+            sta PTR_L00BA+1		; ptr_BA = L1BD8
+l1:         lda #$06			; for (i=7; i>0; i--) {
+            sta ZPVAR_L00B2		; $B2 = 6
+            pla				; pop a
+            tax				; x=a
+
+            ldy #$00			; for (j=6; j>0; j--) {
+l12:        lda L5CC0,X
+            sta (PTR_L00BA),Y		; ptr_BA[y] = L5CC0[x] , write sth to grscreen
+            iny		
+            inx				; x++;y++
             dec ZPVAR_L00B2
-            bne LOOP_L6087
-            txa
-            pha
-            iny
-            ldx L00DC
+            bne l12			; endfor l12
+            
+            txa				; a=x
+            pha				; push a
+            iny				; y++
+            ldx L00DC			; x=$DC
             lda L5CEA,X
-            sta (PTR_L00BA),Y
-            jsr L60DD
-            inc L00DC
-            dec L00B1
-            bne L607F
-            pla
+            sta (PTR_L00BA),Y		; ptr_BA[y] = L5CEA[x] , write sth to grscreen
+            jsr BAptr_nextLine
+            inc L00DC			; $DC++
+            dec L00B1			; $B1--
+            bne l1			; } endfor l1
+            pla				; pop a
             rts
+.endp
+            
 L60A7:      lda #$F7
             sta PTR_L00BA
             lda #$19
@@ -2808,7 +2818,7 @@ L60B4:      sta (PTR_L00BA),Y
             iny
             cpy #$0A
             bne L60B4
-            jsr L60DD
+            jsr BAptr_nextLine
             dex
             bne L60B1
             rts
@@ -2823,20 +2833,23 @@ L60CF:      sta (PTR_L00BA),Y
             iny
             cpy #$08
             bne L60CF
-            jsr L60DD
+            jsr BAptr_nextLine
             dex
             bne L60CC
             rts
-L60DD:      lda PTR_L00BA
+            
+.proc BAptr_nextLine
+            lda PTR_L00BA	
             clc
-            adc #$28
+            adc #40
             sta PTR_L00BA
             lda PTR_L00BA+1
             adc #$00
-            sta PTR_L00BA+1
+            sta PTR_L00BA+1		; ptr_BA+=40
             rts
+.endp            
 
-.proc wait14frames:  
+.proc wait14frames
 	    lda #$00
             sta RTCLOK+2
 l1:         lda #$01
