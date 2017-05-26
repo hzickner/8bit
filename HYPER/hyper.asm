@@ -72,8 +72,8 @@ L00C4       = $00C4
 L00C5       = $00C5
 L00C6       = $00C6
 L00C9       = $00C9
-L00D0       = $00D0
-L00D1       = $00D1
+u16_d0      = $00D0	; used to fill a table
+
 L00D2       = $00D2	; flag for initialized?
 L00D3       = $00D3
 L00D4       = $00D4
@@ -138,8 +138,8 @@ L3938       = $3938
 L3980       = $3980
 L3988       = $3988
 L3990       = $3990
-L3A00       = $3A00
-L3A01       = $3A01
+TABLE60_16bit_L3A00       = $3A00
+
 L3A1E       = $3A1E
 L3A1F       = $3A1F
 L3A3C       = $3A3C
@@ -639,41 +639,43 @@ l1: 	    lda PTR_L00BA+1
             inx
             cpx #202			; for all 202 lines
             bne l1
-l2:         lda #$3A
+l2:         lda #<L3AD4
             sta TABLEH_L3708,X
-            lda #$D4
+            lda #>L3AD4
             sta TABLEL_L37E0,X
             inx
             cpx #214
             bne l2			; write 12 more pointers to table, all to $3AD4
+
             ldy #$00
             lda #$80
-            sta L00D0
+            sta u16_d0			; D0=$80
             lda #$04
-            sta L00D1
-LOOP_L4CFF: lda L00D0
-            sta L3A00,Y
+            sta u16_d0+1		; D1=$04
+l3:         lda u16_d0			; fill another table
+            sta TABLE60_16bit_L3A00,Y
             iny
-            lda L00D1
-            sta L3A00,Y
-            lda L00D0
+            lda u16_d0+1
+            sta TABLE60_16bit_L3A00,Y
+            lda u16_d0
             clc
-            adc #$2C
-            sta L00D0
-            lda L00D1
-            adc #$00
-            sta L00D1
+            adc #44
+            sta u16_d0
+            lda u16_d0+1
+            adc #00
+            sta u16_d0+1
             iny
-            cpy #$78
-            bne LOOP_L4CFF
+            cpy #120			; 60 16bit values $0480+$2C... (1152 + 44)
+            bne l3
+
             lda #$00
             sta ZPVAR_L00B2
             sta L00B1
             jsr SUB_L4DBD
-LOOP_L4D25: ldy ZPVAR_L00B2
-            lda L3A00,Y
+L4:         ldy ZPVAR_L00B2		; while (true)
+            lda TABLE60_16bit_L3A00,Y
             sta PTR_L00BA
-            lda L3A01,Y
+            lda TABLE60_16bit_L3A00+1,Y
             sta PTR_L00BA+1
             inc ZPVAR_L00B2
             inc ZPVAR_L00B2
@@ -748,7 +750,8 @@ LOOP_L4D43: lda L3AD7,X
             beq SKIP_L4DB7
             jmp LOOP_L4D35
 SKIP_L4DB7: jsr SUB_L4DBD
-            jmp LOOP_L4D25
+            jmp l4			; end while(true)
+            
 SUB_L4DBD:  lda #$00
             sta ZPVAR_L00B3
             ldy #$00
@@ -822,9 +825,9 @@ SKIP_L4E3C: ldy L00BE
             sta L00BD
             jmp SKIP_L4E5A
 SKIP_L4E4B: ldy L00BE
-            lda L3A00,Y
+            lda TABLE60_16bit_L3A00,Y
             sta L00BC
-            lda L3A01,Y
+            lda TABLE60_16bit_L3A00+1,Y
             sta L00BD
             jmp SKIP_L4E5A
 SKIP_L4E5A: lda #$0C
