@@ -2570,7 +2570,7 @@ l2:         lda OPTIONSTRINGS,Y
             cpx #$04
             bne l2			; write option string (no/yes/demo) to screen
             
-s2:         lda STRIG0			; //TODO
+s2:         lda STRIG0
             bne l3			; enddo } until (trigger pressed)
 
             lda scrline1+18
@@ -2732,44 +2732,51 @@ l1:         lda #$01
             lda RTCLOK+2
             cmp #$64			; wait 64frames
             bne l1
-            jsr L60C2			; //TODO
+            jsr clearGrscreenArea
             rts
 .endp
-            
-L602A:      lda #$00
+
+.proc L602A
+            lda #$00
             sta RTCLOK+2
-L602E:      lda #$01
+l1:         lda #$01
             sta L00A8
             jsr L6049
             lda ZPVAR_L00B3
             sta L00DC
             jsr SUB_L6070
             lda RTCLOK+2
-            cmp #$64
-            bne L602E
+            cmp #$64			; 64 frames
+            bne l1
+            
             jsr L60A7
-            jsr L60C2
+            jsr clearGrscreenArea
             rts
-L6049:      lda #$07
+.endp            
+
+.proc L6049
+            lda #$07
             sta L00B1
-            lda #$F7
+            lda #<$19F7
             sta PTR_L00BA
-            lda #$19
+            lda #>$19F7
             sta PTR_L00BA+1
             ldx #$00
-L6057:      lda #$0A
+l1:         lda #$0A
             sta ZPVAR_L00B2
             ldy #$00
-L605D:      lda L5C7A,X
+l2:         lda L5C7A,X
             sta (PTR_L00BA),Y
             iny
             inx
             dec ZPVAR_L00B2
-            bne L605D
+            bne l2
             jsr BAptr_nextLine
             dec L00B1
-            bne L6057
+            bne l1
             rts
+.endp
+            
 //TODO            
 .proc SUB_L6070
             lda #$07
@@ -2806,37 +2813,51 @@ l12:        lda L5CC0,X
             pla				; pop a
             rts
 .endp
-            
-L60A7:      lda #$F7
+
+; clear 10 bytes in 7 screenlines
+.proc L60A7
+            lda #<$19F7
             sta PTR_L00BA
-            lda #$19
+            lda #>$19F7
             sta PTR_L00BA+1
+            
             ldx #$07
-L60B1:      ldy #$00
+l1:         ldy #$00
+
             tya
-L60B4:      sta (PTR_L00BA),Y
+l2:         sta (PTR_L00BA),Y
             iny
             cpy #$0A
-            bne L60B4
+            bne l2
+            
             jsr BAptr_nextLine
             dex
-            bne L60B1
+            bne l1
+            
             rts
-L60C2:      lda #$D8
+.endp            
+
+; clear 8 bytes in 7 screenlines (line 75-82 byte 18-26)	
+.proc clearGrscreenArea
+            lda #<(grscreen+75*40+18)
             sta PTR_L00BA
-            lda #$1B
-            sta PTR_L00BA+1
+            lda #>(grscreen+75*40+18)
+            sta PTR_L00BA+1		; ptr_BA=L1BD8
             ldx #$07
-L60CC:      ldy #$00
+l1:         ldy #$00			; l1 7x
             tya
-L60CF:      sta (PTR_L00BA),Y
+            
+l2:         sta (PTR_L00BA),Y		; clear 8bytes
             iny
             cpy #$08
-            bne L60CF
-            jsr BAptr_nextLine
+            bne l2
+            
+            jsr BAptr_nextLine		; next line
             dex
-            bne L60CC
+            bne l1			; end l1 7x
+
             rts
+.endp            
             
 .proc BAptr_nextLine
             lda PTR_L00BA	
@@ -2859,10 +2880,11 @@ l1:         lda #$01
             bne l1
             rts
 .endp            
-            
-SUB_L60FA:  ldx #$00
-L60FC:      lda L3988,X
-            bmi L611D
+
+.proc SUB_L60FA
+            ldx #$00
+l1:         lda L3988,X
+            bmi s1
             lda L3A90,X
             sta L00B5
             lda L3A96,X
@@ -2872,13 +2894,17 @@ L60FC:      lda L3988,X
             lda #$82
             sta L3988,X
             sta L00A0,X
-            stx L00F0
+            
+            stx L00F0		; save x
             jsr SUB_L4DFA
-            ldx L00F0
-L611D:      inx
+            ldx L00F0		; restore x
+            
+s1:         inx
             cpx #$06
-            bne L60FC
+            bne l1
             rts
+.endp            
+            
 SUB_L6123:  lda L00F7
             sta L3AA4,Y
             lda lives
@@ -3290,26 +3316,30 @@ l1:         sta scrline3,Y		; for (i=0; i<$9A; i++)
             sta scrline3,Y		; scrline[$9A-1] = " "
             rts
 .endp            
-            
-SUB_L6468:  ldx #$00
+
+.proc SUB_L6468
+            ldx #$00
             lda L00F7
-            beq SKIP_L647B
+            beq s1
             txa
-LOOP_L646F: sta L3988,X
+l1:         sta L3988,X
             sta L00A0,X
             sta L00C9,X
             inx
             cpx L00F7
-            bne LOOP_L646F
-SKIP_L647B: ldx #$00
+            bne l1
+            
+s1:         ldx #$00
             txa
-LOOP_L647E: sta L3A80,X
+l2:         sta L3A80,X
             clc
             adc #$2A
             inx
             cpx #$06
-            bne LOOP_L647E
+            bne l2
             rts
+.endp
+            
 TABLEH_L648A:
             .byte $30,$31,$31,$31,$31
 TABLEL_L648F:
@@ -3318,39 +3348,42 @@ TABLEH_L6494:
             .byte $31,$31,$3B,$32,$3B
 TABLEL_L6499:
             .byte $B0,$84,$00,$34,$00
-VBLKD_L649E:
+
+.proc VBLKD_L649E
             lda ZPVAR_L00B2
-            bne SKIP_L64C7
+            bne s3
             inc L00B1
             lda L00B1
             cmp #$14
-            bne L64B0
+            bne s1
             inc L00E2
             lda #$00
             sta L00B1
-L64B0:      lda L00AE
+s1:         lda L00AE
             cmp #$01
-            bne L64B8
+            bne s2
             sta ZPVAR_L00B2
-L64B8:      lda L00E2
+s2:         lda L00E2
             sta AUDC3
             lda L00AE
             sta AUDF3
             dec L00AE
             jmp XITVBV
-SKIP_L64C7: inc L00B1
+s3:         inc L00B1
             lda L00B1
             cmp #$14
-            bne L64D5
+            bne s4
             dec L00E2
             lda #$00
             sta L00B1
-L64D5:      lda L00E2
+s4:         lda L00E2
             sta AUDC3
             lda L00AE
             sta AUDF3
             inc L00AE
             jmp XITVBV
+.endp
+            
             .byte $00,$00,$00,$00,$00,$00,$00,$00
             .byte $00,$00,$00,$00,$00,$00,$00,$00
             .byte $00,$00,$00,$00,$00,$00,$00,$00
