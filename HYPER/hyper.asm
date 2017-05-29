@@ -58,8 +58,8 @@ L00B4       = $00B4
 L00B5       = $00B5
 L00B6       = $00B6
 L00B9       = $00B9
-L00BC       = $00BC
-L00BD       = $00BD
+PTR_L00BC       = $00BC
+
 L00BE       = $00BE
 L00BF       = $00BF
 L00C0       = $00C0
@@ -111,7 +111,7 @@ L00FC       = $00FC
 L00FD       = $00FD
 L00FE       = $00FE
 L00FF       = $00FF
-L0F16       = $0F16
+
 
 L30D8       = $30D8
 L3140       = $3140
@@ -137,14 +137,8 @@ L3A80       = $3A80
 L3A88       = $3A88
 L3A90       = $3A90
 L3A96       = $3A96
-L3AA4       = $3AA4
-L3AA5       = $3AA5
-L3AA6       = $3AA6
-L3AA7       = $3AA7
-L3AA8       = $3AA8
-L3AA9       = $3AA9
-L3AAA       = $3AAA
-L3AAB       = $3AAB
+
+
 L3AB7       = $3AB7
 L3AD4       = $3AD4
 L3AD5       = $3AD5
@@ -154,6 +148,9 @@ L3B1F       = $3B1F
 
 
 ; define some ram locations
+	org $0F16
+scrolldata	.DS 127
+	
 	org $100E
 scrline1	.DS 22		; screen ram at $100E
 scrline2	.DS 20
@@ -186,6 +183,11 @@ pl3		.DS 256
 TABLE60_16bit_L3A00	.DS 120	; $3A00-$3A77
 test			.DS 1
 
+	org $3AA4
+playerdata_L3AA4: 
+            .DS 13
+            .DS 13
+            
 	org $3AC0
 DATA20_L3AC0		.DS 200	; buffer to store scrline1	
 
@@ -209,7 +211,7 @@ CAS_LOADADR_L3FE0:
             rts
 CAS_INIT_L3FF8:
             rts
-            
+
             ;org $3FF9
             
             .byte $00,$00,$00,$00,$00,$00,$00
@@ -834,27 +836,27 @@ SUB_L4DFA:  ldx L00B6
             beq SKIP_L4E2D
             ldy L00BE
             lda L3A5A,Y
-            sta L00BC
+            sta PTR_L00BC
             lda L3A5B,Y
-            sta L00BD
+            sta PTR_L00BC+1
             jmp SKIP_L4E5A
 SKIP_L4E2D: ldy L00BE
             lda L3A3C,Y
-            sta L00BC
+            sta PTR_L00BC
             lda L3A3D,Y
-            sta L00BD
+            sta PTR_L00BC+1
             jmp SKIP_L4E5A
 SKIP_L4E3C: ldy L00BE
             lda L3A1E,Y
-            sta L00BC
+            sta PTR_L00BC
             lda L3A1F,Y
-            sta L00BD
+            sta PTR_L00BC+1
             jmp SKIP_L4E5A
 SKIP_L4E4B: ldy L00BE
             lda TABLE60_16bit_L3A00,Y
-            sta L00BC
+            sta PTR_L00BC
             lda TABLE60_16bit_L3A00+1,Y
-            sta L00BD
+            sta PTR_L00BC+1
             jmp SKIP_L4E5A
 SKIP_L4E5A: lda #$0C
             sta L00B1
@@ -872,7 +874,7 @@ LOOP_L4E70: lda L00B4
             sta ZPVAR_L00B3
             ldx #$00
 LOOP_L4E76: ldy ZPVAR_L00B2
-            lda (L00BC),Y
+            lda (PTR_L00BC),Y
             ldy ZPVAR_L00B3
             sta (PTR_L00BA),Y
             iny
@@ -1623,14 +1625,14 @@ main_1:     lda #$03
             jsr SUB_L4CB8
             jsr SUB_L54F2
             ldy #$00
-            jsr SUB_L6123
+            jsr switch_playerdata
             jsr init_score
             lda twopl2
             beq s2
             jsr sel_difficulty
 s2:         jsr SUB_L54F2
             ldy #$0E
-            jsr SUB_L6123
+            jsr switch_playerdata
             
             ldx #$00
             stx L00A9
@@ -2465,22 +2467,14 @@ DEMOSTR_L5D24:
 DIFSTR_L5D28:
             .byte "SELECT DIFFICULTY  1"
                         
-DATA_L5D3C: .byte $25,$2E,$27,$2C,$29,$33,$28,$00
-            .byte $33,$2F,$26,$34,$37,$21,$32,$25
-            .byte $00,$23,$2F,$0E,$00,$30,$32,$25
-            .byte $33,$25,$2E,$34,$33,$4E,$4E,$4E
-            .byte $4E,$4E,$28,$39,$30,$25,$32,$22
-            .byte $2C,$21,$33,$34,$01,$4E,$4E,$4E
-            .byte $4E,$4E,$22,$39,$00,$2A,$2F,$28
-            .byte $2E,$00,$22,$32,$29,$25,$32,$2C
-            .byte $25,$39,$00,$00,$00,$23,$2F,$30
-            .byte $39,$32,$29,$27,$28,$34,$00,$08
-            .byte $23,$0E,$09,$00,$11,$19,$18,$13
-            .byte $00,$2A,$0E,$30,$0E,$00,$22,$32
-            .byte $29,$25,$32,$2C,$25,$39,$00,$21
-            .byte $2C,$2C,$00,$32,$29,$27,$28,$34
-            .byte $33,$00,$32,$25,$33,$25,$32,$36
-            .byte $25,$24,$4E,$4E,$4E,$4E,$4E
+STR_L5D3C:  .byte "ENGLISH SOFTWARE CO."
+            .byte " PRESENTSHYPERB"
+            .byte "LAST!BY JOHN BR"
+            .byte "IERLEY   COPYRIGHT ("
+            .byte "C.) 1983 J.P. BRIERL"
+            .byte "EY ALL RIGHTS RESERV"
+            .byte "ED"
+
 DATA_L5DBB: .byte $48,$00,$48,$00,$48,$00,$48,$00
             .byte $51,$00,$5B,$00,$5B,$00,$60,$00
             .byte $6C,$00,$6C,$00,$5B,$00,$48,$00
@@ -2649,7 +2643,7 @@ L5F79:      ldy L009D
             sta L009D
             sta joyIndex
             sta ZPVAR_L00B3
-            jsr SUB_L6123
+            jsr switch_playerdata
             jsr SUB_L6011
             jmp L5FA1
             rts
@@ -2659,7 +2653,7 @@ L5F8F:      lda #$0E
             sta joyIndex
             lda #$07
             sta ZPVAR_L00B3
-            jsr SUB_L6123
+            jsr switch_playerdata
             jsr SUB_L6011
 L5FA1:      lda #$00
             sta L00A6
@@ -2699,13 +2693,13 @@ L5FEE:      lda L009D
             lda #$07
             sta ZPVAR_L00B3
             jsr L602A
-            lda L3AA4
+            lda playerdata_L3AA4
             bne L6010
             jmp L6191
 L6001:      lda #$00
             sta ZPVAR_L00B3
             jsr L602A
-            lda L3AAB
+            lda playerdata_L3AA4+7
             bne L6010
             jmp L6191
 L6010:      rts
@@ -2872,7 +2866,7 @@ l1:         lda #$01
 
 .proc SUB_L60FA
             ldx #$00
-l1:         lda L3988,X
+l1:         lda L3988,X		; for (i=0; i<6; i++) {
             bmi s1
             lda L3A90,X
             sta L00B5
@@ -2890,73 +2884,82 @@ l1:         lda L3988,X
             
 s1:         inx
             cpx #$06
-            bne l1
+            bne l1		; } end for
             rts
 .endp            
             
-SUB_L6123:  lda L00F7
-            sta L3AA4,Y
+.proc switch_playerdata
+            lda L00F7
+            sta playerdata_L3AA4,Y
             lda lives
-            sta L3AA5,Y
+            sta playerdata_L3AA4+1,Y
             lda COLORIDX_L00CF
-            sta L3AA6,Y
+            sta playerdata_L3AA4+2,Y
             lda L00AA
-            sta L3AA7,Y
+            sta playerdata_L3AA4+3,Y
             lda L009B
-            sta L3AA8,Y
+            sta playerdata_L3AA4+4,Y
             lda L009C
-            sta L3AA9,Y
+            sta playerdata_L3AA4+5,Y
             lda L008F
-            sta L3AAA,Y
+            sta playerdata_L3AA4+6,Y
             ldx #$00
-LOOP_L6148: lda scrline2+7,X
-            sta L3AAB,Y
+            
+l1:         lda scrline2+7,X
+            sta playerdata_L3AA4+7,Y
             iny
             inx
             cpx #$06
-            bne LOOP_L6148
+            bne l1
+            
             cpy #$06
-            bne SKIP_L615D
-            ldy #$0E
-            jmp SKIP_L615F
-SKIP_L615D: ldy #$00
-SKIP_L615F: lda L3AA4,Y
+            bne s1
+            ldy #14
+            jmp s2
+s1:         ldy #$00
+
+s2:         lda playerdata_L3AA4,Y
             sta L00F7
-            lda L3AA5,Y
+            lda playerdata_L3AA4+1,Y
             sta lives
-            lda L3AA6,Y
+            lda playerdata_L3AA4+2,Y
             sta COLORIDX_L00CF
-            lda L3AA7,Y
+            lda playerdata_L3AA4+3,Y
             sta L00AA
-            lda L3AA8,Y
+            lda playerdata_L3AA4+4,Y
             sta L009B
-            lda L3AA9,Y
+            lda playerdata_L3AA4+5,Y
             sta L009C
-            lda L3AAA,Y
+            lda playerdata_L3AA4+6,Y
             sta L008F
             ldx #$00
-LOOP_L6184: lda L3AAB,Y
+            
+l2:         lda playerdata_L3AA4+7,Y
             sta scrline2+7,X
             iny
             inx
             cpx #$06
-            bne LOOP_L6184
+            bne l2
             rts
+.endp
+            
 L6191:      lda #$00
             sta AUDC1
             tay
-L6197:      lda #$00
-            sta DLIST_L6500+2
-            lda #$0F
-            sta DLIST_L6500+3
+L6197:      lda #<$0F00
+            sta line1_ptr
+            lda #>$0F00
+            sta line1_ptr+1
             lda #$08
             sta L00B1
+            
             ldx #$00
-LOOP_L61A7: lda DATA_L5D3C,X
-            sta L0F16,X
+LOOP_L61A7: lda STR_L5D3C,X
+            sta scrolldata,X
             inx
-            cpx #$7F
-            bne LOOP_L61A7
+            cpx #127
+            bne LOOP_L61A7		; load scrolldata for screenline1
+            
             lda #$AA
             sta AUDC1
 L61B7:      lda DATA_L5DBB,Y
@@ -2979,19 +2982,19 @@ L61DB:      lda twopl1
             beq L6202
             lda L3AB7
             pha
-            lda L3AA9
+            lda playerdata_L3AA4+5
             pha
             jsr L6240
             ldy #$00
             pla
             sta L009C
-            jsr SUB_L6123
+            jsr switch_playerdata
             jsr SUB_L54F2
             jsr init_score
             ldy #$0E
             pla
             sta L009C
-            jsr SUB_L6123
+            jsr switch_playerdata
 L6202:      jsr L6240
             lda #$00
             sta L00F8
@@ -3006,8 +3009,8 @@ L6210:      dec L00B1
             lda #$07
             sta L00B1
             sta HSCROL
-            inc DLIST_L6500+2
-            lda DLIST_L6500+2
+            inc line1_ptr
+            lda line1_ptr			; horizontal scrolling in line1
             cmp #$95
             bne SKIP_L622F
             jmp L6197
@@ -3040,9 +3043,9 @@ l1:         sta HPOSP0,X		; set HPOS of all players+missiles to 0
             bne l1
             
             lda #<scrline1
-            sta DLIST_L6500+2
+            sta line1_ptr
             lda #>scrline1
-            sta DLIST_L6500+3
+            sta line1_ptr+1
             lda #$00
             sta HSCROL			; set initial scrmem address for first line, reset HSCROLL
             rts
@@ -3383,7 +3386,7 @@ s4:         lda L00E2
 DLIST_L6500:
             .byte AEMPTY4
             .byte AHSCR+ALMS+$06
-            .word scrline1
+line1_ptr:  .word scrline1
             .byte ALMS+$06
             .word scrline2
             .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
