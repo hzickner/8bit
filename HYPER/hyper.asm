@@ -1145,7 +1145,9 @@ SKIP_L50C2: adc #$05
             tax
             inc L00C9,X
 SKIP_L50D3: ldx L00B1
-LOOP_L50D5: lda L3A90,Y
+
+entry_L50D5:
+            lda L3A90,Y
             lsr
             lsr
             sta DATA192_L3488,X
@@ -1160,7 +1162,9 @@ SKIP_L50E5: lda RANDOM
             lda RND_VALUES_L515C,Y
             sta L3548,X
             rts
-SUB_L50F8:  lda TABLEL_L37E0,Y
+
+.proc SUB_L50F8
+            lda TABLEL_L37E0,Y
             sta PTR_L00C7
             lda TABLEH_L3708,Y
             sta PTR_L00C7+1
@@ -1168,31 +1172,37 @@ SUB_L50F8:  lda TABLEL_L37E0,Y
             lda #$00
             sta DATA192_L3488,X
             sta L34E8,X
-            sta L00C5
-LOOP_L510F: lda (PTR_L00C7),Y
+            sta L00C5			; C5 loop variable (for i=0; i<8; i++) {
+l1:         lda (PTR_L00C7),Y
             and L3548,X
-            sta (PTR_L00C7),Y
+            sta (PTR_L00C7),Y		; *ptr &= L3548[x]
+
             lda PTR_L00C7
             clc
-            adc #$28
+            adc #40
             sta PTR_L00C7
-            bcc SKIP_L5121
-            inc PTR_L00C7+1
-SKIP_L5121: inc L00C5
+            bcc s1
+            inc PTR_L00C7+1		; ptr+=40
+
+s1:         inc L00C5
             lda L00C5
             cmp #$08
-            bne LOOP_L510F
+            bne l1			; } end for
+            
             inx
             txa
-            dex
+            dex				; a=x+1
             ldy L00F0
             cmp L3980,Y
-            bne SKIP_L5138
-            lda #$80
+            bne s2
+            lda #128
             sta L00A0,Y
-SKIP_L5138: rts
-L5139:      lda RANDOM
-            bne L514F
+s2:         rts
+.endp
+
+.proc L5139
+            lda RANDOM		; A=rnd 0..255
+            bne L514F		; if (A==0) {
             txa
             tay
             ldx L5160,Y
@@ -1200,11 +1210,15 @@ L5139:      lda RANDOM
             bne L514F
             lda L3A96,Y
             cmp #$96
-            bcc L5150
+            bcc entry_L5150	; } endif
 L514F:      rts
-L5150:      adc #$0A
+.endp
+
+entry_L5150:
+            adc #$0A
             sta L34E8,X
-            jmp LOOP_L50D5
+            jmp entry_L50D5
+            
 RND_VALUES_L5158:      .byte $01,$04,$10,$40
 RND_VALUES_L515C:      .byte $FC,$F3,$CF,$3F
 L5160:      .byte $00,$10,$20,$30,$40,$50,$00,$00
@@ -1449,6 +1463,7 @@ SKIP_L5355: ldx L00E3
             sta L00E1
 SKIP_L5372: jsr SUB_L5378
             jmp XITVBV
+            
 SUB_L5378:  ldx L00C1
 L537A:      ldy DATA_L38C0,X
             cpy #$CA
