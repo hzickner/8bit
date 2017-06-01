@@ -59,8 +59,8 @@ PTR_L00BC       = $00BC
 L00BE       = $00BE
 L00BF       = $00BF
 L00C0       = $00C0
-L00C1       = $00C1
-L00C2       = $00C2
+firstStar       = $00C1
+lastStar       = $00C2
 PTR_L00C3       = $00C3
 
 L00C5       = $00C5
@@ -1216,7 +1216,7 @@ RND_VALUES_L515C:      .byte $FC,$F3,$CF,$3F
 L5160:      .byte $00,$10,$20,$30,$40,$50,$00,$00
             .byte $00,$00,$00,$00,$00,$00,$00,$00
             .byte $00,$00,$00,$00,$00,$00,$00,$00
-VBLKD_L5178:
+VBLKDgame_L5178:
             lda dis_VBLKD_L5178
             beq SKIP_L517F
             jmp XITVBV
@@ -1229,7 +1229,7 @@ SKIP_L5186: inc L00DE
             bne L5198
             lda #$01
             sta L00DE
-            jsr SUB_L542B
+            jsr update_shipExhaust
             jmp L51BF
 L5198:      ldx #$00
 L519A:      lda #$00
@@ -1248,7 +1248,7 @@ L51A5:      lda mis0+31,Y
 L51B7:      inx
             cpx #$02
             bne L519A
-            jsr SUB_L542B
+            jsr update_shipExhaust
 L51BF:      lda L00AF
             beq L51E5
             ldx #$00
@@ -1476,7 +1476,7 @@ SKIP_L5372: jsr draw_stars
 ; draws 15 stars from first_star to last star
 ; does scrolling and generation of new stars
 .proc draw_stars
-            ldx L00C1			; for (i=C1; i<C2; i++) {
+            ldx firstStar			; for (i=C1; i<C2; i++) {
 l1:         ldy star_lines,X		; Y = star_lines[i]		get star line number
             cpy #202
             bne s1			; if (star_lines[i] == 202) {  (out of screen)
@@ -1506,23 +1506,23 @@ s2:         lda #$00
             sta (PTR_L00C3),Y		; ptr_c3[column]=0
             inc star_lines,X		; star_lines[i]++	; increment line number in array
             inx
-            cpx L00C2
+            cpx lastStar
             bne l1			; } endfor
             
             cpx #60
             bne s3			; if (i==60) {
-            sta L00C1			; c1=0
+            sta firstStar			; c1=0
             lda #15
-            sta L00C2			; c2=15
+            sta lastStar			; c2=15
             rts				; } else {
-s3:         lda L00C2
+s3:         lda lastStar
             clc
             adc #$0F
-            sta L00C2			; c2+=15
-            lda L00C1
+            sta lastStar			; c2+=15
+            lda firstStar
             clc
             adc #$0F			; c1+=15
-            sta L00C1			; }
+            sta firstStar			; }
             rts
 .endp            
 
@@ -1586,31 +1586,31 @@ s1:         lda RANDOM
             rts
 .endp
 
-.proc SUB_L542B
-            inc L00FF
+.proc update_shipExhaust
+            inc L00FF			; $FF++
             lda L00FF
             cmp #$04
-            bne out
+            bne out			; if ($FF==4) { 	; every 5th call
             lda #$00
-            sta L00FF
-            ldx L00FE
-            ldy pldata_idx,X
-            inc L00FE
+            sta L00FF			; $FF=0
+            ldx L00FE			; X=$FE
+            ldy pldata_idx,X		; Y=pldata_idx[X]
+            inc L00FE			; $FE++
             lda L00FE
             cmp #$04
             bne s1
             lda #$00
-            sta L00FE
-s1:         ldx #$00
+            sta L00FE			; if ($FE==4) $FE=0
+s1:         ldx #$00			; X=0;
 
-l1:         lda pl0data_L5ACC,Y
+l1:         lda Exhaust_pl0data_L5ACC,Y
             sta pl0+224,X
-            lda pl1data_L5ACC,Y
+            lda Exhaust_pl1data_L5ACC,Y
             sta pl1+224,X
             iny
             inx
-            cpx #10
-            bne l1
+            cpx #10			; copy 10bytes of pldata from pldata[Y] to pl0 and pl1 
+            bne l1			; } end if
 out:        rts
 .endp
 
@@ -1618,8 +1618,8 @@ out:        rts
 .proc main
             lda L00D2
             bne s1			; if (!initialized) {
-            lda #$0F
-            sta L00C2			;   C2=15	
+            lda #15
+            sta lastStar		;   lastStar=15	
 s1:					; } endif
 	    ldx #$00			; for(i=0; i<14; i++) {
 l1:         lda highscore_str,X
@@ -1651,8 +1651,8 @@ main_1:     lda #$03
             jsr clr_grmem		; clear grmem and DATA_L3488
             jsr init_players_starfield		; init players and some random data
             
-            ldx #>VBLKD_L5178
-            ldy #<VBLKD_L5178
+            ldx #>VBLKDgame_L5178
+            ldy #<VBLKDgame_L5178
             lda #07
             jsr SETVBV			; enable VBLANK routine
 
@@ -1877,7 +1877,7 @@ L562F:      cmp #$0F
             bne L5635
             sta L00FD
 L5635:      lda L00FC
-            cmp #$C8
+            cmp #200
             beq SKIP_L564E
             lda L00FD
             cmp #$07
@@ -1933,7 +1933,7 @@ L567B:      lda pl0x,X
             lda #$0A
             sta L00AA
             jsr SUB_L6278
-            jsr SUB_L58CF
+            jsr warptoNextLevel
 L56A9:      lda #$00
             sta L00A9
             jmp main2
@@ -2205,13 +2205,18 @@ L58CB:      jsr init_players
 
 OUT_L58CE:  rts
 
-SUB_L58CF:  lda #$00
-            sta L00B1
-LOOP_L58D3: lda #$01
-            sta L00A8
-            jsr L5732
+; centers ship
+; warps forward
+; changes colors
+.proc warptoNextLevel
+            lda #$00
+            sta L00B1			; loop variable
+l1:         lda #$01			; for (B1=0; B1<38; B1++) {
+            sta L00A8			; A8=1
+            jsr L5732			; //TODO
+            
             ldx #$00
-LOOP_L58DC: nop
+waitloop:   nop
             nop
             nop
             nop
@@ -2219,104 +2224,124 @@ LOOP_L58DC: nop
             nop
             inx
             cpx #$00
-            bne LOOP_L58DC
+            bne waitloop		; wait 256* (6*nop+inx+bne) cycles
+            
             inc L00B1
             lda L00B1
-            cmp #$26
-            bne LOOP_L58D3
+            cmp #38
+            bne l1			; } endfor
+
             jsr SUB_L4CB8
             lda L00FC
-            cmp #$81
+            cmp #129
             beq L5969
-            bcs L5912
-LOOP_L58FA: ldx #$00
-L58FC:      inc mis0x,X
-            inc pl0x,X
+            bcs s5
+					; while (FC < 129) {		
+l2:         ldx #$00
+					; for (x=0; x<3; x++)
+l3:         inc mis0x,X			; 
+            inc pl0x,X			; 
             inx
             cpx #$03
-            bne L58FC
+            bne l3			; endfor 		set players and missiles right one position
+            
             inc L00FC
-            jsr L592A
+            jsr updatePMxPositions
             lda L00FC
-            cmp #$81
-            bne LOOP_L58FA
+            cmp #129
+            bne l2			; end while
+            
             beq L5969
-L5912:      ldx #$00
-L5914:      dec mis0x,X
+s5:            
+l5:         ldx #$00			; while (FC > 129) {
+l4:         dec mis0x,X
             dec pl0x,X
             inx
             cpx #$03
-            bne L5914
+            bne l4			; endfor 		set players and missiles left one position
+            
             dec L00FC
-            jsr L592A
+            jsr updatePMxPositions
             lda L00FC
-            cmp #$81
-            bne L5912
+            cmp #129
+            bne l5			; } endwhile
             beq L5969
-L592A:      ldx #$00
-L592C:      lda pl0x,X
+            
+.proc updatePMxPositions
+            ldx #$00
+l1:         lda pl0x,X
             sta HPOSP0,X
             inx
             cpx #$04
-            bne L592C
+            bne l1		; update player positions
+
             ldx #$00
-L5938:      lda mis0x,X
+l2:         lda mis0x,X
             sta HPOSM0,X
             inx
             cpx #$03
-            bne L5938
+            bne l2		; update missile positions
+
             lda #$00
             sta RTCLOK+2
-L5946:      lda #$01
+l3:         lda #$01
             sta L00A8
             lda RTCLOK+2
             cmp #$02
-            bne L5946
+            bne l3		; wait 2 frames
+
             lda ZPVAR_L00B3
-            bne L5961
+            bne s1
             lda #$0A
             sta AUDF3
             sta ZPVAR_L00B3
             lda #$A8
-            sta AUDC3
+            sta AUDC3		; if (B3==0) play AUD3
             rts
-L5961:      lda #$00
+           
+s1          lda #$00		; else silence AUD3
             sta AUDF3
             sta ZPVAR_L00B3
             rts
-L5969:      lda #$82
+.endp
+         			; if (FC==129) {   
+L5969:      lda #$82			
             sta L00E2
             lda #$FF
             sta L00AE
             lda #$00
             sta L00B1
             sta ZPVAR_L00B2
-            ldx #>VBLKD_L649E
-            ldy #<VBLKD_L649E
+            ldx #>VBLKDshort_L649E
+            ldy #<VBLKDshort_L649E
             lda #$07
-            jsr SETVBV
+            jsr SETVBV			; set VBLANK Routine
             ldy COLORIDX_L00CF
             lda COLORTBL_L5A5C,Y
             sta COLOR0
             ldy #$FF
             sty L00AB
+            
 L598C:      ldx #$00
 L598E:      inx
             cpx #$08
             bne L598E
             dey
-            bne L598C
+            bne L598C			; waitloop
+
             jsr draw_stars
             jsr draw_stars
             jsr draw_stars
             jsr draw_stars
-            jsr SUB_L542B
+            jsr update_shipExhaust
             dec L00AB
             ldy L00AB
-            bne L598C
+            bne L598C			; next move cycle with shorter waitloop
+
             ldy COLORIDX_L00CF
             lda COLORTBL_L5A66,Y
             sta COLOR1
+            
             ldy #$00
 L59B5:      sty L00AB
             ldx #$00
@@ -2324,7 +2349,7 @@ L59B9:      stx L00F0
             jsr draw_stars
             jsr draw_stars
             jsr draw_stars
-            jsr SUB_L542B
+            jsr update_shipExhaust
             ldx L00F0
             inx
             cpx #$00
@@ -2332,10 +2357,12 @@ L59B9:      stx L00F0
             ldy L00AB
             iny
             cpy #$02
-            bne L59B5
+            bne L59B5			; some more ship move forward cycles
+            
             ldy COLORIDX_L00CF
             lda COLORTBL_L5A70,Y
             sta COLOR2
+            
             ldy #$01
             sty L00AB
 L59E1:      ldx #$00
@@ -2343,26 +2370,30 @@ L59E3:      inx
             cpx #$12
             bne L59E3
             dey
-            bne L59E1
+            bne L59E1			; waitloop
+            
             jsr draw_stars
             jsr draw_stars
             jsr draw_stars
             jsr draw_stars
             jsr draw_stars
             jsr draw_stars
-            jsr SUB_L542B
+            jsr update_shipExhaust
             inc L00AB
             ldy L00AB
             cpy #$E0
-            bne L59E1
-            ldx #>VBLKD_L5178
-            ldy #<VBLKD_L5178
+            bne L59E1			; some more ship move forward cycles
+
+            ldx #>VBLKDgame_L5178
+            ldy #<VBLKDgame_L5178
             lda #$07
-            jsr SETVBV
+            jsr SETVBV			; set VBLANK Routine
             lda #$00
             sta AUDC3
-            sta AUDF3
-            rts
+            sta AUDF3			; silence AUD3
+            rts				; } endif
+.endp            
+            
 SUB_L5A1A:  lda RANDOM
             and #$3F
             bne SKIP_L5A38
@@ -2384,7 +2415,7 @@ SKIP_L5A38: lda L00F7
             bne SKIP_L5A47
             sta L0097
 SKIP_L5A47: lda L00FC
-            cmp #$C8
+            cmp #200
             bne SKIP_L5A51
             lda #$0B
             sta L00FD
@@ -2427,11 +2458,11 @@ pl3bitmap:      .byte $00,$00,$00,$80,$80,$80,$80,$C0
             .byte $C0,$60,$10,$99,$6D,$07		; 14 byte bitmap for pl3
 
 pldata_idx:      .byte 00,10,20,10				; index to plxdata
-pl0data_L5ACC:      .byte $08,$00,$10,$04,$10,$00,$00,$00	; 3 * 10 byte pl0data
+Exhaust_pl0data_L5ACC:      .byte $08,$00,$10,$04,$10,$00,$00,$00	; 3 * 10 byte pl0data
             .byte $00,$00,$08,$00,$04,$10,$04,$20
             .byte $02,$00,$00,$00,$00,$00,$08,$1C
             .byte $12,$08,$36,$08,$10,$49
-pl1data_L5ACC:      .byte $00,$08,$00,$08,$04,$00,$00,$00	; 3 * 10 byte pl1data
+Exhaust_pl1data_L5ACC:      .byte $00,$08,$00,$08,$04,$00,$00,$00	; 3 * 10 byte pl1data
             .byte $00,$00,$00,$10,$08,$00,$10,$08
             .byte $14,$00,$00,$00,$00,$08,$00,$00
             .byte $20,$14,$08,$36,$45,$22
@@ -3040,7 +3071,7 @@ LOOP_L61C6: lda RTCLOK+2
             jmp main.main_1		; }
 SKIP_L61D7: cmp #$06			; if (not START pressed) {
             bne L6210			; }
-L61DB:      lda twopl1			; if (START pressed)
+L61DB:      lda twopl1			; if (START pressed) {
             sta twopl2
             beq L6202
             lda playerdata_L3AB1+6
@@ -3412,39 +3443,39 @@ TABLEH_L6494:
 TABLEL_L6499:
             .byte $B0,$84,$00,$34,$00
 
-.proc VBLKD_L649E
+.proc VBLKDshort_L649E
             lda ZPVAR_L00B2
-            bne s3
-            inc L00B1
+            bne s3			; if (B2==0) {
+            inc L00B1			; B1++
             lda L00B1
-            cmp #$14
+            cmp #20
             bne s1
-            inc L00E2
+            inc L00E2			; if (B1==20) B1=0; E2++
             lda #$00
             sta L00B1
 s1:         lda L00AE
             cmp #$01
             bne s2
-            sta ZPVAR_L00B2
+            sta ZPVAR_L00B2		; if (AE==1) B2=1
 s2:         lda L00E2
             sta AUDC3
             lda L00AE
-            sta AUDF3
+            sta AUDF3			; set AUD3		; decreasing freq until 1 then toggle flag B2
             dec L00AE
-            jmp XITVBV
-s3:         inc L00B1
+            jmp XITVBV			; } endif
+s3:         inc L00B1			; else {
             lda L00B1
-            cmp #$14
+            cmp #20
             bne s4
-            dec L00E2
+            dec L00E2			; if (B1=20) B1=0; E2--
             lda #$00
             sta L00B1
 s4:         lda L00E2
             sta AUDC3
             lda L00AE
-            sta AUDF3
-            inc L00AE
-            jmp XITVBV
+            sta AUDF3			; set AUD3		; increasing freq
+            inc L00AE			
+            jmp XITVBV			; }
 .endp
             
             .byte $00,$00,$00,$00,$00,$00,$00,$00
