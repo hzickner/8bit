@@ -69,7 +69,10 @@ pl3dy	equ	$92
 pl3cy	equ	$93
 ptr1	equ	$94
 ptr2	equ	$96
-frc	equ	$98
+rnd_ptr equ	$98
+frc	equ	$9A
+rnd_val equ	$9B
+
 
 
 	org $2000
@@ -93,28 +96,15 @@ frc	equ	$98
 	
 	jsr init_VB
 	
-	lda #0
-	sta frc
 loop
 	lda #BLUE
 	sta COLBK
 	
-	inc frc
-	lda frc
-	cmp #6
-	bne s1
-	lda #0
-	sta frc	
-s1:
-	
-	lda frc
-	beq s2	
-
 	jsr move_pl0
 	jsr move_pl1
 	jsr move_pl2
 	jsr move_pl3		
-s2:				
+				
 	lda #WHITE
 	sta COLBK
 		
@@ -135,6 +125,8 @@ s2:
 	lda #RED
 	sta COLBK
 	
+	inc frc
+	
 	jsr set_pl0pos
 	jsr set_pl1pos
 	jsr set_pl2pos
@@ -142,11 +134,16 @@ s2:
 
 	jsr handle_pl2col
 	
-	ldx #$2A
-l1:	jsr rndScreenByte
+	lda frc
+	and #$00
+	bne s1
+	
+	ldx #13
+l1:	jsr rndScreenLine
 	dex
 	bne l1
 	
+s1:	
 	lda #BLACK
 	sta COLBK
 		
@@ -561,6 +558,12 @@ out:
 .proc init_display
 	jsr set_grmode
 	jsr fill_screen
+	lda #<scr_mem
+	sta rnd_ptr
+	lda #>scr_mem
+	sta rnd_ptr+1
+	lda RANDOM
+	sta rnd_val
 	rts
 .endp
 
@@ -582,10 +585,10 @@ out:
 
 .proc WaitVBL
 l1:	lda VCOUNT
-	cmp #17
+	cmp #16
 	bcc l1
 l2:	lda VCOUNT
-	cmp #17
+	cmp #16
 	bcs l2
 	rts
 .endp
@@ -598,7 +601,8 @@ l2:	lda VCOUNT
 	sta ptr1+1
 	ldx #15
 l2:	ldy #0
-l1:	lda RANDOM
+	lda RANDOM
+l1:	
 	sta (ptr1),y
 	dey
 	bne l1
@@ -615,18 +619,66 @@ l1:	lda RANDOM
 	cmp #$0F		; random page nr. 0..14 
 	beq l1
 	
-	clc
+	;clc			; carry is always clear
 	adc #>scr_mem
 	sta ptr1+1
 	lda #<scr_mem
 	sta ptr1
 	
-	lda RANDOM
-	tay
+	ldy RANDOM		; random offset 0..255
 	
-	lda RANDOM
-	sta (ptr1),Y
+	lda RANDOM		; random value 0..255
+	;sta (ptr1),Y
 	
+	rts
+.endp
+
+.proc rndScreenBytes
+	lda RANDOM
+	ldy #0
+l1:	sta (rnd_ptr),Y
+	iny
+	bne l1
+	
+	inc rnd_ptr+1		; 5 5		2 2
+	lda rnd_ptr+1		; 3 8		2 4
+	cmp #(>scr_mem)+15	; 2 10
+	bne s2			; 2 12/13
+	lda #>scr_mem		; 3 15
+	sta rnd_ptr+1		; 3 18
+s2:				;   13/18
+	
+	rts
+.endp
+
+.proc rndScreenLine
+	lda rnd_val
+	ldy #0
+l1:	sta (rnd_ptr),Y
+	iny
+	cpy #40
+	bne l1
+	
+	lda #40
+	clc
+	adc rnd_ptr
+	sta rnd_ptr
+	bcc s1
+	inc rnd_ptr+1
+s1		
+	lda rnd_ptr+1
+	cmp #>(scr_mem+96*40)
+	bcc s2
+	lda rnd_ptr
+	cmp #<(scr_mem+96*40)
+	bcc s2
+	lda #<scr_mem
+	sta rnd_ptr
+	lda #>scr_mem
+	sta rnd_ptr+1
+	lda RANDOM
+	sta rnd_val
+s2:	
 	rts
 .endp
 
