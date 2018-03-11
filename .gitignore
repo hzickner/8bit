@@ -2,6 +2,7 @@
 *.lab
 *.lst
 *.xex
+*.nes
 *.p
 *.kcc
 *.bin
