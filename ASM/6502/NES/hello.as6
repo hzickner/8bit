@@ -1,0 +1,112 @@
+;-------------------------------------------------------------------------------
+; Registers
+;-------------------------------------------------------------------------------
+PPUCTRL              = $2000
+PPUMASK              = $2001
+PPUSTATUS            = $2002
+OAMADDR              = $2003
+OAMDATA              = $2004
+PPUSCROLL            = $2005	; write 2bytes x,y
+PPUADDR              = $2006
+PPUDATA              = $2007
+SQ1_VOL              = $4000
+SQ1_SWEEP            = $4001
+SQ1_LO               = $4002
+SQ1_HI               = $4003
+SQ2_VOL              = $4004
+SQ2_SWEEP            = $4005
+SQ2_LO               = $4006
+SQ2_HI               = $4007
+TRI_LINEAR           = $4008
+TRI_LO               = $400A
+TRI_HI               = $400B
+NOISE_VOL            = $400C
+NOISE_LO             = $400E
+NOISE_HI             = $400F
+DMC_FREQ             = $4010	; bit7 interrupt flag: 0 clear interrupt flag
+				; bit6 loop flag
+DMC_RAW              = $4011
+DMC_START            = $4012
+DMC_LEN              = $4013
+OAM_DMA              = $4014
+SND_CHN              = $4015
+JOY1                 = $4016
+JOY2                 = $4017	; read controller 2 bits
+APU_FCOUNT           = $4017	; bit6: interrupt flag: 1 clear interrupt flag, 0 flag is unaffected
+
+;----------------------------------------------------------------
+; constants
+;----------------------------------------------------------------
+
+PRG_COUNT		= 1		; 1 = 16KB, 2 = 32KB
+MIRRORING		= %0001		; %0000 = horizontal, %0001 = vertical, %1000 = four-screen
+
+;----------------------------------------------------------------
+; variables
+;----------------------------------------------------------------
+
+	.enum $0000
+	.ende
+	
+;-------------------------------------------------------------------------------
+; iNES Header
+;-------------------------------------------------------------------------------
+	.db "NES", $1A			; Header
+	.db PRG_COUNT			; 1 x 16k PRG banks
+	.db 1				; 1 x 8k CHR banks
+	.db $0|MIRRORING		; mapper0 and MIRRORING
+	.db $0
+	.hex 00 00 00 00		; iNES Tail 
+	.hex 00 00 00 00
+
+;----------------------------------------------------------------
+; program bank(s)
+;----------------------------------------------------------------
+
+	org $10000-(PRG_COUNT*$4000)
+
+;----------------------------------------------------------------
+; main	
+; program entry
+reset:
+	sei			; ignore IRQs
+	cld			; disable decimal mode
+	ldx #$40
+	stx APU_FCOUNT		; disable APU frame IRQ
+	ldx #$FF
+	txs			; setup stack
+	inx			; X=0
+	stx PPUCTRL		; disable NMI
+	stx PPUMASK		; disable rendering
+	stx DMC_FREQ		; disable DMC IRQs
+
+	bit PPUSTATUS		; clear vblank flag
+@vbl1:	bit PPUSTATUS
+	bpl @vbl1
+				; room for some RAM init
+
+@vbl2:	bit PPUSTATUS
+	bpl @vbl2		; wait 2 vblanks for PPU to stabilize
+				; PPU is now ready to accept data and to display something 		
+
+@mainloop:
+	jmp @mainloop
+
+;----------------------------------------------------------------
+; executed on VBLANK interrupt if enabled via PPUCTRL
+NMI:
+	rti
+	
+;----------------------------------------------------------------
+; executed on interrupts
+IRQ:	
+	rti
+
+;----------------------------------------------------------------
+; vectors
+;----------------------------------------------------------------
+	org $FFFA
+	.dw NMI
+	.dw reset
+	.dw IRQ	
+	
