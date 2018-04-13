@@ -17,6 +17,7 @@ SKSTAT		equ	$D20F
 	ICL "../include/u16_2bcd16.asm"
 	
 .proc kbd
+	PHA
 	TXA
 	PHA		;save X
 	TYA

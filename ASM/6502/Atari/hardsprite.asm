@@ -398,9 +398,9 @@ l1:	sta (ptr1),Y
 
 .proc set_pl0pos	; x $30..$C8;48..200;152 		y $20..$D8;32..216;184
 
-	clc
+	;clc
 	lda oply
-	adc #<PL0
+	;adc #<PL0	; <PL0 is 0 no need to add
 	sta ptr1
 	lda #>PL0
 	sta ptr1+1
@@ -410,9 +410,9 @@ l2:	sta (ptr1),Y
 	dey
 	bpl l2	
 	
-	clc
+	;clc
 	lda ply
-	adc #<PL0
+	;adc #<PL0
 	sta ptr1
 	lda #>PL0
 	sta ptr1+1
@@ -430,9 +430,9 @@ l1:	lda pldata,Y
 
 .proc set_pl1pos	; x $30..$C8;48..200;152 		y $20..$D8;32..216;184
 
-	clc
+	;clc
 	lda oply1
-	adc #<PL1
+	;adc #<PL1
 	sta ptr1
 	lda #>PL1
 	sta ptr1+1
@@ -442,9 +442,9 @@ l2:	sta (ptr1),Y
 	dey
 	bpl l2	
 	
-	clc
+	;clc
 	lda ply1
-	adc #<PL1
+	;adc #<PL1
 	sta ptr1
 	lda #>PL1
 	sta ptr1+1
@@ -463,9 +463,9 @@ l1:	lda pldata,Y
 
 .proc set_pl2pos	; x $30..$C8;48..200;152 		y $20..$D8;32..216;184
 
-	clc
+	;clc
 	lda oply2
-	adc #<PL2
+	;adc #<PL2
 	sta ptr1
 	lda #>PL2
 	sta ptr1+1
@@ -475,9 +475,9 @@ l2:	sta (ptr1),Y
 	dey
 	bpl l2	
 	
-	clc
+	;clc
 	lda ply2
-	adc #<PL2
+	;adc #<PL2
 	sta ptr1
 	lda #>PL2
 	sta ptr1+1
@@ -503,9 +503,9 @@ l1:	lda (ptr2),Y
 
 .proc set_pl3pos	; x $30..$C8;48..200;152 		y $20..$D8;32..216;184
 
-	clc
+	;clc
 	lda oply3
-	adc #<PL3
+	;adc #<PL3
 	sta ptr1
 	lda #>PL3
 	sta ptr1+1
@@ -515,9 +515,9 @@ l2:	sta (ptr1),Y
 	dey
 	bpl l2	
 	
-	clc
+	;clc
 	lda ply3
-	adc #<PL3
+	;adc #<PL3
 	sta ptr1
 	lda #>PL3
 	sta ptr1+1
