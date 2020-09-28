@@ -9,18 +9,7 @@
 ; modified for HoZ Z80 platform
 
 ; 20200925	8192 bytes	initial build (orig NASCOM Basic)
-
-; MONITOR EQUATES (RESTART INSTRUCTIONS)
-
-_ROUT   EQU     0F7H            ; ROUT - Output char in A
-_BLNK   EQU     07BDFH          ; SCAL BLINK - Get input char in A
-_INLN   EQU     063DFH          ; SCAL INLIN - Get input line
-_MFLP   EQU     05FDFH          ; SCAL MFLP - Toggle tape drv LED
-_MRET   EQU     05BDFH          ; SCAL MRET - Return to monitor
-_READ   EQU     052DFH          ; SCAL READ
-_RIN    EQU     062DFH          ; SCAL RIN - Scan for input char
-_VRFY   EQU     056DFH          ; SCAL VERIFY
-_WRIT   EQU     057DFH          ; SCAL WRITE
+; 20200928	7208 bytes	remove NASCOM monitor dependencies
 
 ; GENERAL EQUATES
 
@@ -33,6 +22,7 @@ LF      EQU     0AH             ; Line feed
 CS      EQU     0CH             ; Clear screen
 CR      EQU     0DH             ; Carriage return
 CTRLO   EQU     0FH             ; Control "O"
+CTRLQ	EQU	11H		; Control "Q"
 CTRLR   EQU     12H             ; Control "R"
 CTRLS   EQU     13H             ; Control "S"
 CTRLU   EQU     15H             ; Control "U"
@@ -43,30 +33,6 @@ TBS     EQU     1DH             ; "T" monitor back space
 TCS     EQU     1EH             ; "T" monitor clear screen
 TCR     EQU     1FH             ; "T" monitor carriage return
 DEL     EQU     7FH             ; Delete
-
-; MONITOR LOCATIONS
-
-MONSTT  EQU     0000H           ; Start of monitor
-STMON   EQU     000DH           ; NAS-SYS initialisation
-MFLP    EQU     0051H           ; Flip tape LED ("T")
-MONTYP  EQU     008DH           ; Type of "T" monitor
-T2DUMP  EQU     03D1H           ; "T2" Dump routine
-T4WR    EQU     0400H           ; "T4" Write routine
-T4READ  EQU     070CH           ; "T4" Read routine
-VDU     EQU     0800H           ; NASCOM Video RAM base
-
-; MONITOR WORK SPACE LOCATIONS
-
-PORT0   EQU     0C00H           ; Copy of output port 0
-ARG1    EQU     0C0CH           ; Argument 1
-ARG2    EQU     0C0EH           ; Argument 2
-TCUR    EQU     0C18H           ; "T" monitor cursor
-CURSOR  EQU     0C29H           ; NAS-SYS Cursor
-ARGN    EQU     0C2BH           ; Number of ARGS
-TOUT    EQU     0C4AH           ; "T" Output reflection
-TIN     EQU     0C4DH           ; "T" Input reflection
-CIN     EQU     0C75H           ; NAS-SYS Input table
-NMI     EQU     0C7EH           ; NAS-SYS NMI Jump
 
 ; BASIC WORK SPACE LOCATIONS
 
@@ -167,8 +133,6 @@ STARTB: DI                      ; No interrupts
         DW      DEINT           ; Get integer -32768 to 32767
         DW      ABPASS          ; Return integer in AB
 
-        JP      LDNMI1          ; << NO REFERENCE TO HERE >>
-
 CSTART: LD      HL,WRKSPC       ; Start of workspace RAM
         LD      SP,HL           ; Set up a temporary stack
         JP      INITST          ; Go to initialise
@@ -184,7 +148,7 @@ COPY:   LD      A,(DE)          ; Get source
         JP      NZ,COPY         ; More to move
         LD      SP,HL           ; Temporary stack
         CALL    CLREG           ; Clear registers and stack
-        CALL    PRNTCR          ; Output CRLF
+        CALL    PRNTCRLF        ; Output CRLF
         LD      (BUFFER+72+1),A ; Mark end of buffer
         LD      (PROGST),A      ; Initialise program area
 MSIZE:  LD      HL,MEMMSG       ; Point to message
@@ -406,7 +370,7 @@ WORDTB: DW      PEND
         DW      DEF
         DW      POKE
         DW      DOKE
-        DW      SCREEN
+;        DW      SCREEN
         DW      LINES
         DW      CLS
         DW      WIDTH
@@ -417,8 +381,8 @@ WORDTB: DW      PEND
         DW      CONT
         DW      LIST
         DW      CLEAR
-        DW      CLOAD
-        DW      CSAVE
+;        DW      CLOAD
+;        DW      CSAVE
         DW      NEW
 
 ; RESERVED WORD TOKEN VALUES
@@ -545,9 +509,9 @@ INITAB: JP      WARMST          ; Warm start jump
         DB      0               ; Break flag
 
         JP      TTYLIN          ; Input reflection (set to TTY)
-        JP      POINTB          ; POINT reflection unused
-        JP      SETB            ; SET reflection
-        JP      RESETB          ; RESET reflection
+        JP      0000h           ; POINT reflection unused
+        JP      0000h           ; SET reflection			//TODO remove
+        JP      0000h           ; RESET reflection
 
         DW      STLOOK          ; Temp string space
         DW      -2              ; Current line number (cold)
@@ -956,18 +920,10 @@ DELCHR: DEC     B               ; Count bytes in buffer
         CALL    OUTC            ; Output character in A
         JP      NZ,MORINP       ; Not end - Get more
 OTKLN:  CALL    OUTC            ; Output character in A
-KILIN:  CALL    PRNTCR          ; Output CRLF
+KILIN:  CALL    PRNTCRLF        ; Output CRLF
         JP      TTYLIN          ; Get line again
 
-GETLIN: CALL    MONTST          ; Is it NAS-SYS?
-        JP      Z,TTYLIN        ; No - Character input
-        LD      HL,(CIN)        ; Point to NAS-SYS input table
-        LD      A,(HL)          ; Get input mode
-        CP      74H             ; Is it "X" mode?
-        JP      Z,TTYLIN        ; Yes - Teletype line input
-        CALL    INLINE          ; Get a line from NAS-SYS
-        JP      DONULL          ; POS(X)=0 and do nulls
-
+GETLIN:
 TTYLIN: LD      HL,BUFFER       ; Get a line by character
         LD      B,1             ; Set buffer as empty
         XOR     A
@@ -987,7 +943,7 @@ PROCES: LD      A,C             ; Get character
         CP      CTRLG           ; Bell?
         JP      Z,PUTCTL        ; Yes - Save it
         CP      CTRLC           ; Is it control "C"?
-        CALL    Z,PRNTCR        ; Yes - Output CRLF
+        CALL    Z,PRNTCRLF      ; Yes - Output CRLF
         SCF                     ; Flag break
         RET     Z               ; Return if control "C"
         CP      CR              ; Is it enter?
@@ -1054,7 +1010,7 @@ OUTC:   PUSH    AF              ; Save character
         POP     AF              ; Restore character
         PUSH    BC              ; Save buffer length
         PUSH    AF              ; Save character
-        CP      " "             ; Is it a control code?
+        CP      ' '             ; Is it a control code?
         JP      C,DINPOS        ; Yes - Don't INC POS(X)
         LD      A,(LWIDTH)      ; Get line width
         LD      B,A             ; To B
@@ -1063,21 +1019,14 @@ OUTC:   PUSH    AF              ; Save character
         JP      Z,INCLEN        ; Yes - No width limit
         DEC     B               ; Restore width
         CP      B               ; At end of line?
-        CALL    Z,PRNTCR        ; Yes - output CRLF
+        CALL    Z,PRNTCRLF      ; Yes - output CRLF
 INCLEN: INC     A               ; Move on one character
         LD      (CURPOS),A      ; Save new position
 DINPOS: POP     AF              ; Restore character
         POP     BC              ; Restore buffer length
-        PUSH    AF              ; << This sequence >>
-        POP     AF              ; << is not needed >>
-        PUSH    AF              ; Save character
-        PUSH    BC              ; Save buffer length
-        LD      C,A             ; Character to C
-        CALL    CONMON          ; Send it
-        POP     BC              ; Restore buffer length
-        POP     AF              ; Restore character
+        CALL    MONOUT          ; Send it
         RET
-
+        
 CLOTST: CALL    GETINP          ; Get input character
         AND     01111111B       ; Strip bit 7
         CP      CTRLO           ; Is it control "O"?
@@ -1105,7 +1054,7 @@ LISTLP: POP     HL              ; Restore address of line
         CALL    COUNT           ; Count lines
         CALL    TSTBRK          ; Test for break key
         PUSH    BC              ; Save address of next line
-        CALL    PRNTCR          ; Output CRLF
+        CALL    PRNTCRLF        ; Output CRLF
         LD      E,(HL)          ; Get LSB of line number
         INC     HL
         LD      D,(HL)          ; Get MSB of line number
@@ -1143,12 +1092,6 @@ SETLIN: PUSH    HL              ; Set up LINES counter
         LD      (LINESC),HL     ; Save in LINES counter
         POP     HL
         RET
-
-LDNMI1: LD      HL,BREAK        ; Break routine
-        LD      (NMI),HL        ; NMI forces break
-        JP      PRNTOK          ; Go to command mode
-
-        DB      0FEH            ; <<< NO REFERENCE TO HERE >>>
 
 COUNT:  PUSH    HL              ; Save code string address
         PUSH    DE
@@ -1245,12 +1188,10 @@ PUTFID: LD      B,ZFOR          ; "FOR" block marker
         PUSH    BC              ; Save it
         INC     SP              ; Don't save C
 
-RUNCNT: CALL    CHKBRK          ; Execution driver - Test break
-        OR      A               ; Break key hit?
-        CALL    NZ,STALL        ; Yes - Pause for a key
+RUNCNT: CALL    TSTBRK          ; Execution driver - Test break
         LD      (BRKLIN),HL     ; Save code address for break
         LD      A,(HL)          ; Get next byte in code string
-        CP      ":"             ; Multi statement line?
+        CP      ':'             ; Multi statement line?
         JP      Z,EXCUTE        ; Yes - Execute it
         OR      A               ; End of line?
         JP      NZ,SNERR        ; No - Syntax error
@@ -1314,13 +1255,27 @@ UPDATA: LD      (NXTDAT),HL     ; Update DATA pointer
         EX      DE,HL           ; Restore code string address
         RET
 
-TSTBRK: CALL    CHKBRK          ; Test for interrupts
-        OR      A
-        RET     Z               ; Return if no key pressed
-STALL:  CALL    CLOTST          ; Get input and test for ^O
-        CP      CTRLS           ; Is it control "S"
-        CALL    Z,CLOTST        ; Yes - Get another character
-        CP      CTRLC           ; Return if not control "C"
+TSTBRK: RST     18H             ; Check input status
+        RET     Z               ; No key, go back
+        RST     10H             ; Get the key into A
+        CP      ESC             ; Escape key?
+        JR      Z,BRK           ; Yes, break
+        CP      CTRLC           ; <Ctrl-C>
+        JR      Z,BRK           ; Yes, break
+        CP      CTRLS           ; Stop scrolling?
+        RET     NZ              ; Other key, ignore
+
+
+STALL:  RST     10H             ; Wait for key
+        CP      CTRLQ           ; Resume scrolling?
+        RET      Z              ; Release the chokehold
+        CP      CTRLC           ; Second break?
+        JR      Z,STOP          ; Break during hold exits prog
+        JR      STALL           ; Loop until <Ctrl-Q> or <brk>
+
+BRK:    LD      A,0FFh          ; Set BRKFLG
+        LD      (BRKFLG),A      ; Store it
+        
 STOP:   RET     NZ              ; Exit if anything else
         DB      0F6H            ; Flag "STOP"
 PEND:   RET     NZ              ; Exit if anything else
@@ -1361,82 +1316,6 @@ NULL:   CALL    GETINT          ; Get integer 0-255
         LD      (NULLS),A       ; Set nulls number
         RET
 
-ARRLD1: LD      B,-1            ; Flag array load
-ARRSV1: CALL    GETCHR          ; Skip "*"
-        LD      A,B             ; CLOAD* or CSAVE*
-        LD      (BRKLIN),A      ; Save it
-        LD      A,1             ; It's an array
-        LD      (FORFLG),A      ; Flag array name
-        CALL    GETVAR          ; Get address of array name
-        PUSH    HL              ; Save code string address
-        LD      (FORFLG),A      ; Clear flag
-        LD      H,B             ; Address of array to HL
-        LD      L,C
-        DEC     BC              ; Back space
-        DEC     BC              ;  to point
-        DEC     BC              ;  to the
-        DEC     BC              ; array name
-        LD      A,(BRKLIN)      ; CLOAD* or CSAVE* ?
-        OR      A
-        PUSH    AF              ; Save CLOAD* / CSAVE* status
-        EX      DE,HL           ; Array data length
-        ADD     HL,DE           ; End of data
-        EX      DE,HL           ; To DE
-        LD      C,(HL)          ; Get dimension bytes
-        LD      B,0
-        ADD     HL,BC           ; 2 Bytes each dimension
-        ADD     HL,BC
-        INC     HL              ; Over number of dimensions
-        PUSH    HL              ; Address of array data
-        PUSH    DE              ; End of array data
-        PUSH    BC              ; Number of dimensions
-        LD      A,(BRKLIN)      ; CLOAD* or CSAVE* ?
-        CP      -1
-        CALL    Z,CASFF         ; CLOAD* - Cassette on
-        LD      A,(BRKLIN)      ; CLOAD* or CSAVE* ?
-        CP      -1
-        CALL    NZ,CASFFW       ; CSAVE* - Cassette on and wait
-        NOP
-        NOP
-        NOP
-        LD      HL,0
-        LD      (CHKSUM),HL     ; Zero check sum
-        POP     BC              ; Number of dimensions
-        POP     DE              ; End of array data
-        POP     HL              ; Address of array data
-        LD      B,11010010B     ; Header byte
-        JP      JPLDSV          ; CSAVE-SNDHDR , CLOAD-GETHDR
-
-SNDHDR: LD      A,B             ; Get header byte
-        CALL    WUART2          ; Send 2 bytes to UART
-        CALL    WUART2          ; Send 2 bytes to UART
-        JP      SNDARY          ; Send array data
-
-GETHDR: LD      C,4             ; 4 Bytes to check
-HDRLP:  CALL    RUART           ; Read byte from UART
-        CP      B               ; Same as header?
-        JP      NZ,GETHDR       ; No - Wait for another
-        DEC     C               ; Count bytes
-        JP      NZ,HDRLP        ; More needed
-SNDARY: CALL    TSTNUM          ; Check it's a numerical array
-ARYLP:  CALL    CPDEHL          ; All array data done
-        JP      Z,SUMOFF        ; Yes - Do check sum
-        POP     AF              ; CLOAD* or CSAVE* ?
-        PUSH    AF              ; Re-save flags
-        LD      A,(HL)          ; Get byte
-        CALL    P,WUART         ; CSAVE* - Write byte
-        CALL    M,RUART         ; CLOAD* - Read byte
-        LD      (HL),A          ; Save byte in case of CLOAD*
-        CALL    ACCSUM          ; Accumulate check sum
-        INC     HL              ; Next byte
-        JP      ARYLP           ; Repeat
-
-SUMOFF: CALL    DOSUM           ; Do check sum
-        CALL    CASFF           ; Cassette off
-        POP     AF              ; Not needed any more
-        POP     HL              ; Restore code string address
-        RET
-
 ACCSUM: PUSH    HL              ; Save address in array
         LD      HL,(CHKSUM)     ; Get check sum
         LD      B,0             ; BC - Value of byte
@@ -1445,26 +1324,6 @@ ACCSUM: PUSH    HL              ; Save address in array
         LD      (CHKSUM),HL     ; Re-save check sum
         POP     HL              ; Restore address in array
         RET
-
-DOSUM:  LD      A,(BRKLIN)      ; CLOAD* or CSAVE* ?
-        OR      A
-        JP      M,CHSUMS        ; CLOAD* - Check if sums match
-        LD      A,(CHKSUM)      ; Get LSB of check sum
-        CALL    WUART           ; Write to UART
-        LD      A,(CHKSUM+1)    ; Get MSB of check sum
-        JP      WUART           ; Write to UART and return
-
-CHSUMS: CALL    RUART           ; Read LSB of check sum
-        PUSH    AF              ; Save it
-        CALL    RUART           ; Read MSB of check sum
-        POP     BC              ; LSB to B
-        LD      E,B             ; LSB to E
-        LD      D,A             ; MSB to D
-        LD      HL,(CHKSUM)     ; Get accumulated check sum
-        CALL    CPDEHL          ; Are they the same?
-        RET     Z               ; Yes - End CLOAD*
-        CALL    CASFF           ; Cassette off
-        JP      OUTBAD          ; Different - Output "Bad"
 
 CHKLTR: LD      A,(HL)          ; Get byte
         CP      "A"             ; < "A" ?
@@ -1702,7 +1561,7 @@ IFGO:   CALL    TSTNUM          ; Make sure it's numeric
 
 MRPRNT: DEC     HL              ; DEC 'cos GETCHR INCs
         CALL    GETCHR          ; Get next character
-PRINT:  JP      Z,PRNTCR        ; CRLF if just PRINT
+PRINT:  JP      Z,PRNTCRLF      ; CRLF if just PRINT
 PRNTLP: RET     Z               ; End of list - Exit
         CP      ZTAB            ; "TAB(" token?
         JP      Z,DOTAB         ; Yes - Do TAB routine
@@ -1734,7 +1593,7 @@ PRNTLP: RET     Z               ; End of list - Exit
         ADD     A,(HL)          ; Add length of string
         DEC     A               ; Adjust it
         CP      B               ; Will output fit on this line?
-        CALL    NC,PRNTCR       ; No - CRLF first
+        CALL    NC,PRNTCRLF     ; No - CRLF first
 PRNTNB: CALL    PRS1            ; Output string at (HL)
         XOR     A               ; Skip CALL by setting "Z" flag
 PRNTST: CALL    NZ,PRS1         ; Output string at (HL)
@@ -1744,12 +1603,14 @@ PRNTST: CALL    NZ,PRS1         ; Output string at (HL)
 STTLIN: LD      A,(CURPOS)      ; Make sure on new line
         OR      A               ; Already at start?
         RET     Z               ; Yes - Do nothing
-        JP      PRNTCR          ; Start a new line
+        JP      PRNTCRLF          ; Start a new line
 
 ENDINP: LD      (HL),0          ; Mark end of buffer
         LD      HL,BUFFER-1     ; Point to buffer
-PRNTCR: LD      A,CR            ; Load a CR
+PRNTCRLF: LD    A,CR            ; Load a CR
         CALL    OUTC            ; Output character
+        LD      A,LF            ; Load a LF
+        CALL    OUTC            ; Output character        
 DONULL: XOR     A               ; Set to position 0
         LD      (CURPOS),A      ; Store it
         LD      A,(NULLS)       ; Get number of nulls
@@ -1765,7 +1626,7 @@ DOCOM:  LD      A,(COMMAN)      ; Get comma width
         LD      B,A             ; Save in B
         LD      A,(CURPOS)      ; Get current position
         CP      B               ; Within the limit?
-        CALL    NC,PRNTCR       ; No - output CRLF
+        CALL    NC,PRNTCRLF       ; No - output CRLF
         JP      NC,NEXITM       ; Get next item
 ZONELP: SUB     14              ; Next zone of 14 characters
         JP      NC,ZONELP       ; Repeat if more zones
@@ -2114,13 +1975,11 @@ FNOFST: LD      B,0             ; Get address of function
         PUSH    BC              ; Save adjusted token value
         CALL    GETCHR          ; Get next character
         LD      A,C             ; Get adjusted token value
-        CP      2*(ZPOINT-ZSGN) ; Adjusted "POINT" token?
-        JP      Z,POINTB        ; Yes - Do "POINT" (not POINTB)
         CP      2*(ZLEFT-ZSGN)-1; Adj' LEFT$,RIGHT$ or MID$ ?
         JP      C,FNVAL         ; No - Do function
         CALL    OPNPAR          ; Evaluate expression  (X,...
-        CALL    CHKSYN          ; Make sure "," follows
-        DB      ","
+        CALL    CHKSYN          ; Make sure ',' follows
+        DB      ','
         CALL    TSTSTR          ; Make sure it's a string
         EX      DE,HL           ; Save code string address
         LD      HL,(FPREG)      ; Get address of string
@@ -3163,114 +3022,6 @@ WUART:  PUSH    AF              ; Save byte
         POP     BC              ; Restore BC
         POP     AF              ; Restore byte
         RET
-
-CSAVE:  LD      B,1             ; Flag "CSAVE"
-        CP      ZTIMES          ; "*" token? ("CSAVE*")
-        JP      Z,ARRSV1        ; Yes - Array save
-        CALL    EVAL            ; Evaluate expression
-        PUSH    HL              ; Save code string address
-        CALL    GTFLNM          ; Get file name
-        PUSH    DE              ; Save file name
-        CALL    CASFFW          ; Turn on motor and wait
-        POP     DE              ; Restore file name
-        LD      A,11010011B     ; Header byte
-        CALL    WUART           ; Send byte to UART
-        CALL    WUART2          ; Send byte twice more
-        LD      A,(DE)          ; Get file name
-        CALL    WUART           ; Send it to UART
-        NOP
-        NOP
-        NOP
-        LD      HL,PROGND       ; Start of program information
-        LD      (ARG1),HL       ; Save for monitor save routine
-        LD      HL,(PROGND)     ; End of program information
-        LD      (ARG2),HL       ; Save for monitor save routine
-        CALL    SAVE            ; Save program to tape
-        CALL    ARET            ; Not much there!
-        POP     HL              ; Restore code string address
-        RET
-
-CLOAD:  LD      A,(HL)          ; Get byte after "CLOAD"
-        CP      ZTIMES          ; "*" token? ("CLOAD*")
-        JP      Z,ARRLD1        ; Yes - Array load
-        CALL    SMOTOR          ; Start motor and get "?"
-        SUB     ZPRINT          ; "?" ("PRINT" token) Verify?
-        JP      Z,FLGVER        ; Yes - Flag "verify"
-        XOR     A               ; Flag "load"
-        DB      01H             ; Skip "CPL" and "INC HL"
-FLGVER: CPL                     ; Flag "verify"
-        INC     HL              ; Skip over "?"
-        PUSH    AF              ; Save verify flag
-        DEC     HL              ; DEC 'cos GETCHR INCs
-        CALL    GETCHR          ; Get next character
-        LD      A,0             ; Any file will do
-        JP      Z,ANYNAM        ; No name given - Any will do
-        CALL    EVAL            ; Evaluate expression
-        CALL    GTFLNM          ; Get file name
-        LD      A,(DE)          ; Get first byte of name
-ANYNAM: LD      L,A             ; Save name to find
-        POP     AF              ; Get verify flag
-        PUSH    AF              ; And re-save
-        OR      A               ; Verify of load?
-        LD      H,A
-        LD      (FPREG),HL      ; Save nam of file to find
-        CALL    Z,CLRPTR        ; Load - Clear pointers
-        LD      HL,(FPREG)      ; Get name of program to find
-        EX      DE,HL           ; Name to DE
-CLOAD1: LD      B,3             ; 3 Header bytes
-CLOAD2: CALL    RUART           ; Get a byte from UART
-        SUB     11010011B       ; Header byte?
-        JP      NZ,CLOAD1       ; Look for header
-        DEC     B               ; Count header bytes
-        JP      NZ,CLOAD2       ; More to find?
-        CALL    RUART           ; Get name of file
-        CALL    FILFND          ; Display "file X found"
-        INC     E               ; Any file name given?
-        DEC     E
-        JP      Z,THSFIL        ; No - This file will do
-        CP      E               ; Has file been found?
-        JP      NZ,CLOAD1       ; No - Look for another
-THSFIL: NOP
-        NOP
-        NOP
-        POP     AF              ; Get verify flag
-        OR      A               ; Load or verify?
-        JP      NZ,CLOADV       ; Verify program
-        CALL    MONLD           ; Use monitor to load program
-        LD      HL,(PROGND)     ; Get end of program
-        CALL    ENFMEM          ; See if enough memory
-        JP      CLOADE          ; "Ok" and set up pointers
-
-CLOADV: CALL    MONVE           ; Use monitor to verify program
-CLOADE: LD      HL,OKMSG        ; "Ok" message
-        CALL    PRS             ; Output string
-        CALL    ARET            ; Not a lot there!
-        JP      SETPTR          ; Set up line pointers
-
-OUTBAD: LD      HL,BAD          ; "Bad" message
-        CALL    PRS             ; Output string
-        JP      ERRIN           ; In line message
-
-FILFND: PUSH    BC              ; <- Save
-        PUSH    HL              ; <- all
-        PUSH    DE              ; <- the
-        PUSH    AF              ; <- registers
-        LD      HL,FILE         ; "File" message
-        CALL    PRS             ; Output string
-        POP     AF              ; Get file name
-        PUSH    AF              ; And re-save
-        CALL    CONMON          ; Output file name to screen
-        LD      HL,FOUND        ; "Found" message
-        CALL    PRS             ; Output string
-        POP     AF              ; <- Restore
-        POP     DE              ; <- all
-        POP     HL              ; <- the
-        POP     BC              ; <- registers
-        RET
-
-FILE:   DB      "File ",0
-FOUND:  DB      " Found",CR,LF,0
-BAD:    DB      "Bad",0,0,0
 
 PEEK:   CALL    DEINT           ; Get memory address
         LD      A,(DE)          ; Get byte in memory
@@ -4367,34 +4118,7 @@ ATNTAB: DB      9                       ; Table used by ATN
         DB      06CH,0AAH,0AAH,07FH     ;-1/3
         DB      000H,000H,000H,081H     ; 1/1
 
-CASFFW: CALL    FLPLED          ; Turn on cassette
-        LD      B,0             ; Set 1 second delay
-DELAYB: CALL    DELAY           ; Wait a bit
-        DEC     B               ; Count
-        JP      NZ,DELAYB       ; More delay needed
-        RET
-
-CASFF:  JP      FLPLED          ; Flip tape LED
-
 ARET:   RET                     ; A RETurn instruction
-
-CONMON: PUSH    HL              ; Output character to screen
-        PUSH    BC              ; 
-        PUSH    DE              ; 
-        PUSH    AF              ; 
-        CALL    MONTST          ; See if NAS-SYS
-        JP      NZ,NASOUT       ; NAS-SYS - Output ASCII
-        POP     AF              ; Get character
-        PUSH    AF              ; And re-save
-        CP      LF              ; ASCII Line feed?
-        JP      Z,IGCHR         ; Yes - Ignore it
-        CP      BKSP            ; ASCII back space?
-        JP      NZ,CONOT1       ; No - Test for CR
-        LD      A,TBS           ; NASBUG back space
-CONOT1: CP      CR              ; ASCII CR?
-        JP      NZ,OUTCHR       ; No - Output character
-        LD      A,TCR           ; NASBUG CR
-        JP      OUTCHR          ; Output it
 
 NASOUT: POP     AF              ; Get character
         PUSH    AF              ; And re-save
@@ -4405,16 +4129,9 @@ IGCHR:  POP     AF              ; Restore character
         POP     HL              ;
         RET
 
-GETINP: PUSH    HL              ; Get an input character
-        PUSH    BC              ;
-        PUSH    DE              ;
-        CALL    MONTST          ; See if NAS-SYS
-        JP      Z,GETTIN        ; "T" monitor - Get input
-        DW      _BLNK
-        JP      CONVIN          ; Convert to ASCII
+GETINP: RST	10h             ; Get an input character
+	RET
 
-GETTIN: CALL    TIN             ; "T" input a character
-        JP      NC,GETTIN       ; No input - wait
 CONVIN: CP      TBS             ; NASBUG back space?
         JP      NZ,CNVIN1       ; No - Test for break
         LD      A,BKSP          ; ASCII back space
@@ -4433,19 +4150,6 @@ CNVIN4: CP      TCR             ; NASBUG CR?
 CNVIN5: POP     DE
         POP     BC
         POP     HL
-        RET
-
-CHKBRK: XOR     A               ; Check for break
-        CALL    SFTENT          ; Test for shift/enter
-        JP      Z,TBRK2         ; Yes - Test for second break
-        LD      A,(BRKFLG)      ; Get break flag
-        OR      A               ; Break flag set?
-        JP      NZ,TBRK2        ; Yes - Test for second break
-        XOR     A               ; Flag no break
-        RET
-
-TBRK2:  CALL    BREAK2          ; Second break?
-        LD      A,-1            ; Flag break
         RET
 
 GUART:  IN      A,(UARTS)       ; Get UART status
@@ -4468,30 +4172,9 @@ SUART:  PUSH    AF              ; Save A
         NOP
         NOP
 
-SFTENT: PUSH    HL              ; Test for Shift Enter from KBD
-        LD      A,00000010B     ; Reset KBD counter mask
-        LD      HL,PORT0        ; Get old contents
-        XOR     (HL)            ; Toggle bit
-        OUT     (0),A           ; Reset KBD counter
-        XOR     00000001B       ; Toggle bit
-        OUT     (0),A           ; Next row
-        XOR     00000010B
-        OUT     (0),A           ; Clear "clear" strobe
-        LD      A,(HL)          ; Get old value
-        OUT     (0),A           ; Original contents
-        ADD     HL,DE           ; ?? WHAT ??
-        POP     HL              ; Restore HL
-        IN      A,(0)           ; Read in row
-        AND     00010010B       ; Mask SHIFT and ENTER
-        RET
-
-CLS:    CALL    MONTST          ; See if NAS-SYS
-        JP      Z,TCLS          ; "T" CLS
+CLS: 
         LD      A,CS            ; ASCII Clear screen
-        JP      CONMON          ; Output character
-
-TCLS:   LD      A,TCS           ; NASBUG Clear screen
-        JP      CONMON          ; Output character
+        JP      MONOUT          ; Output character
 
 DELAY:  XOR     A               ; Delay routine
 DELAY1: PUSH    AF              ; PUSHes and POPs delay
@@ -4539,138 +4222,20 @@ JJUMP1: DI                      ; Disable interrupts
         LD      IX,-1           ; Flag cold start
         JP      CSTART          ; Go and initialise
 
-SCREEN: CALL    GETINT          ; Get integer 0 to 255
-        PUSH    AF              ; Save column
-        CALL    CHKSYN          ; Make sure "," follows
-        DB      ","
-        CALL    GETINT          ; Get integer 0 to 255
-        POP     BC              ; Column to B
-        PUSH    HL              ; Save code string address
-        PUSH    BC              ; Save column
-        CALL    SCRADR          ; Calculate screen address
-        PUSH    HL              ; Save screen address
-        CALL    MONTST          ; See if NAS-SYS
-        JP      Z,TMNCUR        ; "T" monitor - "T" cursor
-        POP     HL              ; Restore screen address
-        LD      (CURSOR),HL     ; Set new cursor position
-        POP     HL              ; Rstore code string address
-        RET
-
-TMNCUR: LD      HL,(TCUR)       ; Get address or cursor
-        LD      (HL)," "        ; Remove cursor
-        POP     HL              ; Get new cursor address
-        LD      (TCUR),HL       ; Set new cursor
-        LD      (HL),"_"        ; Put it on screen
-        POP     HL              ; Restore code string address
-        RET
-
-SCRADR: LD      HL,VDU+10-65    ; SCREEN VDU address (0,0)
-        LD      B,0
-        LD      C,A             ; Line to BC
-        OR      A               ; Test it
-        JP      Z,FCERR         ; Zero - ?FC Error
-        CP      16+1            ; 16 lines
-        JP      P,FCERR         ; > 16 - ?FC Error
-        POP     DE              ; RETurn address
-        POP     AF              ; Get column
-        PUSH    DE              ; Re-save RETurn
-        LD      D,0
-        LD      E,A             ; Column to DE
-        OR      A               ; Test it
-        JP      Z,FCERR         ; Zero - ?FC Error
-        CP      48+1            ; 48 characters per line
-        JP      P,FCERR         ; > 48 - ?FC Error
-        ADD     HL,DE           ; Add column to address
-        LD      D,0
-        LD      E,C             ; Line to DE
-        LD      B,64            ; 64 Bytes per line
-ADD64X: ADD     HL,DE           ; Add line
-        DJNZ    ADD64X          ; SIXTY FOUR TIMES!!!
-        RET
-
-FLPLED: CALL    MONTST          ; See if NAS-SYS
-        JP      Z,TMFLP         ; "T" MFLP
-        DW      _MFLP
-        RET
-
-TMFLP:  JP      MFLP            ; Flip drive LED
-
-MONOUT: PUSH    AF              ; Save character
-        CALL    MONTST          ; See if NAS-SYS
-        JP      Z,TMNOUT        ; "T" output
-        POP     AF              ; Restore character
-        DB      _ROUT           ; Output it
-        RET
-
-TMNOUT: POP     AF              ; Restore character
-        JP      TOUT            ; "T" output
-
-BREAK2: LD      A,(BRKFLG)      ; Break flag set?
-        JP      NZ,RETCTC       ; Yes - Return ^C
-        CALL    MONTST          ; See if NAS-SYS
-        JP      Z,TCHINP        ; Get "T" character input
-        DW      _RIN            ; Scan for a character
-        RET
-
-TCHINP: JP      TIN             ; "T" input a character
+MONOUT: 
+        JP	0008h           ; Output char
 
 RETCTC: LD      A,0             ; Clear Break flag
         LD      (BRKFLG),A
         LD      A,CTRLC         ; Return ^C
         RET
 
-MONTST: LD      A,(MONSTT+1)    ; "T" monitor or NAS-SYS?
-        CP      33H             ; 31 00 10 / 31 33 0C
-        RET
-
-SAVE:   CALL    FLPLED          ; Flip tape LED
-        CALL    MONTST          ; See if NAS-SYS
-        JP      Z,TSAVE         ; "T" save
-        DW      _WRIT           ; Save program
-        RET
-
-TSAVE:  LD      A,(MONTYP)      ; "T2" or "T4" (FLAGS!!!)
-        JP      Z,T4WR          ; T4 Write
-        JP      T2DUMP          ; T2 Dump
-
-MONLD:  CALL    FLPLED          ; Flip tape LED
-        CALL    MONTST          ; See if NAS-SYS
-        JP      Z,TLOAD         ; "T" load
-        LD      A,"R"           ; Set READ
-        LD      (ARGN),A
-        DW      _READ           ; Load program
-        RET
-
-TLOAD:  LD      A,(MONTYP)      ; "T2" or "T4" (FLAGS!!!)
-        JP      Z,T4READ        ; T4 Read
-        JP      T2DUMP          ; T2 Dump ??????????
-
-MONITR: CALL    MONTST          ; See if NAS-SYS
-        JP      Z,MONSTT        ; Jump to zero if "T"
-        DW      _MRET           ; Return to NAS-SYS
-
-MONVE:  CALL    FLPLED          ; Flip tape LED
-        CALL    MONTST          ; See if NAS-SYS
-        JP      Z,FCERR         ; Verify not available on "T"
-        LD      A,"V"           ; Set VERIFY
-        LD      (ARGN),A
-        DW      _VRFY           ; Verify tape
-        RET
-
+MONITR:
+	RST	00h		; Restart (Normally Monitor Start)
+	
 INITST: LD      A,0             ; Clear break flag
         LD      (BRKFLG),A
-        CALL    MONTST          ; See if NAS-SYS
-        JP      Z,INIT          ; "T" - No NMI vector
-        LD      HL,BREAK        ; Set NMI gives break
-        LD      (NMI),HL
-        PUSH    IX              ; Get start up condition
-        POP     AF              ; "Z" set if cold , Else clear
-        OR      A               ; "Cold" or "Cool" start?
-        JP      NZ,INIT         ; "Cool" don't init NAS-SYS
-        LD      B,15            ; Delay for keyboard clear
-        CALL    DELAYB          ; Allow time for key release
-        CALL    STMON           ; Initialise NAS-SYS
-        JP      INIT            ; Initialise BASIC
+        JP      INIT
 
 BREAK:  PUSH    AF              ; Save character
         LD      A,-1
@@ -4679,110 +4244,7 @@ BREAK:  PUSH    AF              ; Save character
 ARETN:  RETN                    ; Return from NMI
 
         NOP
-
-INLINE: DW      _INLN           ; Get an input line
-        PUSH    DE              ; Save cursor address
-        PUSH    DE              ; Cursor address to HL
-        POP     HL
-        LD      DE,48-1         ; Length of line-1
-        ADD     HL,DE           ; Point to end of line
-ENDLIN: LD      A,(HL)          ; Get end of line
-        CP      " "             ; Space?
-        JP      NZ,LINTBF       ; No - Copy to buffer
-        DEC     E               ; Back 1 character
-        LD      A,0             ; Wasteful test on E
-        OR      E
-        JP      Z,LINTBF        ; Start of line - Copy it
-        DEC     HL              ; Back 1 character
-        JP      ENDLIN          ; Keep looking for end
-
-LINTBF: PUSH    DE              ; Line length to BC
-        POP     BC
-        INC     BC              ; Length +1
-        LD      DE,BUFFER       ; Input buffer
-        POP     HL              ; Line start
-        PUSH    BC              ; Save length
-        LDIR                    ; Move line to buffer
-        LD      A,0
-        LD      (DE),A          ; Mark end of buffer with 00
-        POP     BC              ; Restore buffer length
-        LD      B,C             ; Length returned in B
-        LD      HL,BUFFER-1     ; Point to start of buffer-1
-        RET
-
-GETXYA: CALL    CHKSYN          ; Make sure "(" follows
-        DB      "("
-        CALL    GETNUM          ; Get a number
-        CALL    DEINT           ; Get integer -32768 to 32767
-        PUSH    DE              ; Save "X"
-        CALL    CHKSYN          ; Make sure "," follows
-        DB      ","
-        CALL    GETNUM          ; Get a number
-        CALL    CHKSYN          ; Make sure ")" follows
-        DB      ")"
-        CALL    DEINT           ; Get integer -32768 to 32767
-        PUSH    HL              ; Save code string address
-        POP     IY              ; In IY
-        CALL    XYPOS           ; Address and bit mask
-        PUSH    AF              ; Save mask
-        CALL    ADJCOL          ; Adjust column
-        CALL    SCRADR          ; Get VDU address
-        POP     AF              ; Restore bit mask
-        LD      B,11000000B     ; Block graphics base
-        OR      B               ; Set bits 7 & 6
-        RET
-
-SETB:   CALL    GETXYA          ; Get co-ords and VDU address
-        PUSH    AF              ; Save bit mask
-        LD      A,(HL)          ; Get character from screen
-        CP      11000000B       ; Is it a block graphic?
-        JP      NC,SETOR        ; Yes - OR new bit
-        POP     AF              ; Restore bit mask
-PUTBIT: LD      (HL),A          ; Put character on screen
-RESCSA: PUSH    IY              ; Restore code string address
-        POP     HL              ; From IY
-        RET
-
-SETOR:  POP     BC              ; Restore bit mask
-        OR      B               ; Merge the bits
-        JP      PUTBIT          ; Save on screen
-
-RESETB: CALL    GETXYA          ; Get co-ords and VDU address
-        PUSH    AF              ; Save bit mask
-        LD      A,(HL)          ; Get byte from screen
-        CP      11000000B       ; Is it a block graphic?
-        JP      C,NORES         ; No - Leave it
-        LD      B,00111111B     ; Six bits per block
-        AND     B               ; Clear bits 7 & 6
-        POP     BC              ; Get bit mask
-        AND     B               ; Test for common bit
-        JP      Z,RESCSA        ; None - Leave it
-        LD      A,(HL)          ; Get byte from screen
-        AND     00111111B       ; Isolate bit
-        XOR     B               ; Clear that bit
-        CP      11000000B       ; Is it a graphic blank?
-        JP      NZ,PUTBIT       ; No - Save character
-        LD      A," "           ; Put a space there
-        JP      PUTBIT          ; Save the space
-
-NORES:  POP     BC              ; Drop bit mask
-        JP      RESCSA          ; Restore code string address
-
-POINTB: CALL    GETXYA          ; Get co-ords and VDU address
-        LD      B,(HL)          ; Get character from screen
-        CALL    TSTBIT          ; Test if bit is set
-        JP      NZ,POINT0       ; Different - Return zero
-        LD      A,0
-        LD      B,1             ; Integer AB = 1
-POINTX: POP     HL              ; Drop return
-        PUSH    IY              ; PUSH code string address
-        LD      DE,RETNUM       ; To return a number
-        PUSH    DE              ; Save for return
-        JP      ABPASS          ; Return integer AB
-
-POINT0: LD      B,0             ; Set zero
-        JP      POINTX          ; Return value
-
+        
 XYPOS:  POP     BC              ; Get return address
         POP     HL              ; Get column
         PUSH    HL              ; And re-save
@@ -4828,19 +4290,10 @@ ADJCOL: POP     BC              ; Restore return address
         LD      A,E             ; Get row
         RET
 
-SMOTOR: CALL    CASFF           ; Flip tape drive
-        LD      A,(HL)          ; Get byte
-        RET
-
-JPLDSV: LD      A,(BRKLIN)      ; CLOAD or CSAVE?
-        CP      -1
-        JP      NZ,SNDHDR       ; CSAVE - Send header
-        JP      GETHDR          ; CLOAD - Get header
-
-CRLIN1: CALL    PRNTCR          ; Output CRLF
+CRLIN1: CALL    PRNTCRLF          ; Output CRLF
         JP      GETLIN          ; Get an input line
 
-CRLIN:  CALL    PRNTCR          ; Output CRLF
+CRLIN:  CALL    PRNTCRLF          ; Output CRLF
         JP      GETLIN          ; Get an input line
 
 TSTBIT: PUSH    AF              ; Save bit mask
@@ -4851,7 +4304,7 @@ TSTBIT: PUSH    AF              ; Save bit mask
         RET
 
 OUTNCR: CALL    OUTC            ; Output character in A
-        JP      PRNTCR          ; Output CRLF
+        JP      PRNTCRLF          ; Output CRLF
 
 JJUMP:  JP      JJUMP1          ; "Cool" start
 
