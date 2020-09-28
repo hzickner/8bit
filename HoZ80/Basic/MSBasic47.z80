@@ -10,6 +10,7 @@
 
 ; 20200925	8192 bytes	initial build (orig NASCOM Basic)
 ; 20200928	7208 bytes	remove NASCOM monitor dependencies
+; 20200928	7196 bytes	remove NOPs
 
 ; GENERAL EQUATES
 
@@ -187,15 +188,6 @@ SETTOP: DEC     HL              ; Back one byte
         LD      DE,STLOOK-1     ; See if enough RAM
         CALL    CPDEHL          ; Compare DE with HL
         JP      C,MSIZE         ; Ask again if not enough RAM
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
         LD      DE,0-50         ; 50 Bytes string space
         LD      (LSTRAM),HL     ; Save last available RAM
         ADD     HL,DE           ; Allocate string space
@@ -4169,9 +4161,6 @@ SUART:  PUSH    AF              ; Save A
         POP     AF              ; Restore A
         RET
 
-        NOP
-        NOP
-
 CLS: 
         LD      A,CS            ; ASCII Clear screen
         JP      MONOUT          ; Output character
@@ -4242,8 +4231,6 @@ BREAK:  PUSH    AF              ; Save character
         LD      (BRKFLG),A      ; Flag break
         POP     AF              ; Restore character
 ARETN:  RETN                    ; Return from NMI
-
-        NOP
         
 XYPOS:  POP     BC              ; Get return address
         POP     HL              ; Get column
